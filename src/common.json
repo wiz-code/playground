@@ -1,0 +1,128 @@
+{
+  "Meta": [
+    ["siteName", "Three.jsゲームのデモ/テストページ"],
+    [
+      "title",
+      [
+        ["App", "Three.jsゲームのデモ/テストページ"],
+        ["SelectPage", "Three.jsゲームのデモ/テストをプレイする"]
+      ]
+    ],
+    [
+      "subtitle",
+      [
+        ["SelectPage", "FPSゲームやお絵描きゲームなど様々なアプリを製作予定"]
+      ]
+    ],
+    [
+      "keywords",
+      [
+        ["App", "テストプレイ,デモサイト,アプリ,ゲーム,JavaScript,Three.js,PixiJS"],
+        ["SelectPage", "テストプレイ,アプリ,ゲーム,選択"]
+      ]
+    ],
+    [
+      "description",
+      [
+        ["App", "個人で開発したアプリやゲームをテストプレイするためのサイト"],
+        ["SelectPage", "テストプレイするアプリやゲームを選択します"]
+      ]
+    ]
+  ],
+  
+  "Games": [
+    [
+      "worker-fps",
+      {
+        "name": "WebWorker FPSゲーム",
+        "type": "fps",
+
+        "keywords": "WebWorkerテンプレート,FPS,ゲーム,テスト中",
+        "description": "WebWorkerテンプレート、それはいまだかつてない斬新で驚異的なゲーム",
+
+        "heroes": [
+          {
+            "id": "hiroi-kun",
+            "name": "ヒロイくん",
+            "image": "hiroi-kun.jpg",
+            "description": "剣技が強い男勇者"
+          },
+          {
+            "id": "himei-san",
+            "name": "ヒメイさん",
+            "image": "himei-san.jpg",
+            "description": "魔法が強い女勇者"
+          }
+        ],
+        "levels": [
+          {
+            "id": "stage-1",
+            "name": "最初のステージ",
+            "description": "基本的な操作を覚えるのに適した簡単なステージ"
+          }
+        ],
+        "transition": "pattern-1"
+      }
+    ]
+  ],
+
+  "LastPathSegments": ["index.html"],
+
+  "Transitions": [
+    [
+      "pattern-1",
+      [
+        [["title", "start"], "play"],
+        [["play", "back"], "title"],
+        [["play", "fail"], "gameover"],
+        [["play", "achieve"], "clear"],
+        [["play", "back"], "title"]
+      ]
+    ],
+    [
+      "pattern-2",
+      [
+        [["title", "start"], "select-hero"],
+        [["title", "back"], "unstarted"],
+        [["select-hero", "select"], "select-stage"],
+        [["select-hero", "back"], "title"],
+        [["select-stage", "select"], "play"],
+        [["select-stage", "back"], "select-hero"],
+        [["play", "fail"], "gameover"],
+        [["play", "achieve"], "clear"],
+        [["play", "back"], "title"]
+      ]
+    ]
+  ],
+
+  "Paths": [
+    [
+      "Assets",
+      [
+        ["images", "/assets/images"],
+        ["sounds", "/assets/sounds"]
+      ]
+    ],
+    [
+      "Sounds",
+      [
+        { "name": "shot", "type": "sfx", "file": "shot.mp3" },
+        { "name": "damage", "type": "sfx", "file": "damage-1.mp3" },
+        { "name": "jump", "type": "sfx", "file": "cursor-move-3.mp3" },
+        { "name": "get-item", "type": "sfx", "file": "decision-11.mp3" },
+        { "name": "dash", "type": "sfx", "file": "evasion.mp3" },
+        { "name": "girl-voice-1", "type": "sfx", "file": "sugoi.mp3" },
+        { "name": "goal", "type": "sfx", "file": "kirakira-1.mp3" },
+        { "name": "fast-move", "type": "sfx", "file": "fast-move.mp3" },
+        { "name": "first-stage", "type": "bgm", "file": "Morning.mp3" }
+      ]
+    ]
+  ],
+
+  "KeyPressMaxCount": 4,
+  "PointerEventSize": 8,
+  "ButtonSize": 17,
+  "AxisSize": 6,
+  "HighFramerateCoef": 1,
+  "LowFramerateCoef": 2
+}
