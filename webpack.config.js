@@ -59,6 +59,10 @@ module.exports = (env, arg) => ({
     new CopyPlugin({
       patterns: [
         path.resolve(__dirname, 'assets', '**/*'),
+        {
+          from: path.resolve(__dirname, 'configs', '**/*'),
+          to: '[name]',
+        },
       ],
     }),
   ],
