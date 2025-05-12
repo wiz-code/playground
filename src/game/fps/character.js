@@ -164,6 +164,7 @@ class Character extends Entity {
     /// //////////
     if (!this.hasControls) {
       this.collidable.traverse((col) => {
+        //console.log(this.name, col.name, col.body.position)
         col.collider.getCenter(this.#pos, col.role === 'arm');
         col.mesh.position.copy(this.#pos);
         q2.multiplyQuaternions(col.quaternion, q1);

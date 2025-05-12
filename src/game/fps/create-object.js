@@ -23,7 +23,7 @@ import { Game } from '../settings';
 import { World, Screen } from './settings';
 
 const { HalfPI } = Game;
-const { PI } = Math;
+const { floor, PI } = Math;
 
 const caches = {
   geometry: new Map(),
@@ -166,10 +166,12 @@ export const createSphere = (subtype, name, type, body, offset) => {
   if (caches.geometry.has(key)) {
     geometry = caches.geometry.get(key);
   } else {
+    const widthSegments = size.widthSegments ?? 12;
+    const heightSegments = size.heightSegments ?? 6;
     geometry.body = new SphereGeometry(
       size.radius,
-      size.widthSegments,
-      size.heightSegments,
+      widthSegments,
+      heightSegments,
     );
 
     if (wireframe) {
@@ -307,14 +309,29 @@ export const createCapsule = (subtype, name, type, role, body, offset) => {
   if (caches.geometry.has(key)) {
     geometry = caches.geometry.get(key);
   } else {
-    geometry.body = new CapsuleGeometry(size.radius, size.height, 2, 8);
+    const capSegments = size.capSegments ?? 4;
+    const radiusSegments = size.radiusSegments ?? 8;
+    const heightSegments = size.heightSegments ?? 1;
+    geometry.body = new CapsuleGeometry(size.radius, size.height, capSegments, radiusSegments, heightSegments);
 
     if (wireframe) {
       geometry.wire = new EdgesGeometry(geometry.body);
     }
 
     if (satellite) {
-      const geomSize = size.radius + World.pointSize * 0.5;
+      const radius = size.radius + World.pointSize * 0.5;
+      //const heightSegments = floor((size.height * 0.1) / size.radius) + 1;
+      const heightSegments = floor((size.height + size.radius * 2) / 6);
+      const geom = new CapsuleGeometry(radius, size.height, 1, 3, heightSegments);
+      const vertices = geom.attributes.position.array.slice(0);
+
+      geometry.points = new BufferGeometry();
+      geometry.points.setAttribute(
+        'position',
+        new Float32BufferAttribute(vertices, 3),
+      );
+
+      /*const geomSize = size.radius + World.pointSize * 0.5;
 
       const geom = new ConeGeometry(geomSize, geomSize, 3);
       const vertices = geom.attributes.position.array.slice(0);
@@ -334,7 +351,7 @@ export const createCapsule = (subtype, name, type, role, body, offset) => {
       geom2.translate(0, -geomOffset, 0);
 
       geometry.points = mergeGeometries([geom1, geom2]);
-      geometry.points.center();
+      geometry.points.center();*/
     }
 
     if (type === 'skeletal') {
@@ -456,7 +473,7 @@ export const createBody = (
   name,
   type,
   role,
-  { style, size, transform = {} },
+  { style, size, transform = {}, wireframe, satellite },
   offset,
 ) => {
   let geometry = {};
@@ -468,7 +485,7 @@ export const createBody = (
     name,
     type,
     role,
-    { style, size, transform },
+    { style, size, transform, wireframe, satellite },
     offset,
   );
   const bust = createBust(subtype, name, { style, size });

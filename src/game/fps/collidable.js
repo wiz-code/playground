@@ -94,7 +94,7 @@ class Collidable {
         this.offset,
       );
       /// ////////
-      let geom = new CapsuleGeometry(1.1, 10, 4, 8);
+      let geom = new CapsuleGeometry(1.1, 10, 4, 8, 3);
       geom.translate(0, 5, 0);
       geom = new EdgesGeometry(geom);
       const mat = new MeshBasicMaterial({
@@ -178,8 +178,8 @@ class Collidable {
 
       if (parent != null) {
         if (parent.type === 'skeletal' && parent.role === 'arm') {
-          const { length } = parent.body.geometry.parameters;
-          body.translateZ(length);
+          const { height } = parent.body.geometry.parameters;
+          body.translateZ(height);
         }
 
         parent.body.add(body);

@@ -121,6 +121,8 @@ export const Characters = [
             faceColor: 0xdc143c,
             faceWireColor: 0xdb6e84,
           },
+          wireframe: true,
+          satellite: true,
           size: { radius: 2, height: 4 },
         },
         collider: {
@@ -150,10 +152,9 @@ export const Characters = [
                 wireColor: 0x004d66,
                 pointColor: 0xeb4b2f,
               },
-              size: { radius: 1, widthSegments: 16, heightSegments: 8 },
+              size: { radius: 1 },
               wireframe: true,
               satellite: true,
-              transform: {},
             },
             collider: {
               shape: 'sphere',
@@ -169,7 +170,7 @@ export const Characters = [
                 role: 'arm',
                 // skeletal: { name: 'left-upper-arm', options: { loop: true } },
                 offset: {
-                  position: { x: 0, y: 0, z: 4 },
+                  position: { x: 0, y: 0, z: 3 },
                   rotation: {
                     x: (0 / 360) * PI * 2,
                     y: (0 / 360) * PI * 2,
@@ -185,6 +186,8 @@ export const Characters = [
                     wireColor: 0x004d66,
                     pointColor: 0xeb4b2f,
                   },
+                  wireframe: true,
+                  satellite: true,
                   size: { radius: 1, height: 10 },
                 },
                 collider: {
@@ -203,7 +206,7 @@ export const Characters = [
                         y: (0 / 360) * PI * 2,
                         z: (0 / 360) * PI * 2,
                       },
-                      position: { x: 0, y: 0, z: 4 },
+                      position: { x: 0, y: 0, z: 3 },
                     },
                     body: {
                       shape: 'sphere',
@@ -217,7 +220,6 @@ export const Characters = [
                       size: { radius: 1, widthSegments: 16, heightSegments: 8 },
                       wireframe: true,
                       satellite: true,
-                      transform: {},
                     },
                     collider: {
                       shape: 'sphere',
@@ -233,7 +235,7 @@ export const Characters = [
                         role: 'arm',
                         // skeletal: { name: 'left-forearm', options: { loop: true } },
                         offset: {
-                          position: { x: 0, y: 0, z: 4 },
+                          position: { x: 0, y: 0, z: 3 },
                           rotation: {
                             x: (0 / 360) * PI * 2,
                             y: (0 / 360) * PI * 2,
@@ -249,6 +251,8 @@ export const Characters = [
                             wireColor: 0x004d66,
                             pointColor: 0xeb4b2f,
                           },
+                          wireframe: true,
+                          satellite: true,
                           size: { radius: 1, height: 10 },
                         },
                         collider: {
@@ -263,7 +267,7 @@ export const Characters = [
                             role: 'joint',
                             offset: {
                               rotation: { y: 0 },
-                              position: { x: 0, y: 0, z: 6 },
+                              position: { x: 0, y: 0, z: 3 },
                             },
                             body: {
                               shape: 'sphere',
@@ -281,7 +285,6 @@ export const Characters = [
                               },
                               wireframe: true,
                               satellite: true,
-                              transform: {},
                             },
                             collider: {
                               shape: 'sphere',
@@ -365,9 +368,6 @@ export const Characters = [
               size: { radius: 1, widthSegments: 16, heightSegments: 8 },
               wireframe: true,
               satellite: true,
-              transform: {
-                rotation: { z: -PI * 0.5 },
-              },
             },
             collider: {
               shape: 'sphere',
@@ -396,9 +396,6 @@ export const Characters = [
                   size: { radius: 1, widthSegments: 16, heightSegments: 8 },
                   wireframe: true,
                   satellite: true,
-                  transform: {
-                    rotation: { z: -PI * 0.5 },
-                  },
                 },
                 collider: {
                   shape: 'sphere',
