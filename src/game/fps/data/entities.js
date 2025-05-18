@@ -61,7 +61,8 @@ export const Characters = [
       },
 
       collidable: {
-        name: 'core',
+        name: 'body',
+        type: 'object',
         body: {
           shape: 'body',
           style: {
@@ -133,8 +134,7 @@ export const Characters = [
         children: [
           {
             name: 'left-shoulder',
-            type: 'skeletal',
-            role: 'joint',
+            type: 'joint',
             offset: {
               rotation: {
                 x: (0 / 360) * PI * 2,
@@ -166,8 +166,7 @@ export const Characters = [
             children: [
               {
                 name: 'left-upper-arm',
-                type: 'skeletal',
-                role: 'arm',
+                type: 'arm',
                 // skeletal: { name: 'left-upper-arm', options: { loop: true } },
                 offset: {
                   position: { x: 0, y: 0, z: 3 },
@@ -198,8 +197,7 @@ export const Characters = [
                 children: [
                   {
                     name: 'left-elbow',
-                    type: 'skeletal',
-                    role: 'joint',
+                    type: 'joint',
                     offset: {
                       rotation: {
                         x: (0 / 360) * PI * 2,
@@ -231,8 +229,7 @@ export const Characters = [
                     children: [
                       {
                         name: 'left-forearm',
-                        type: 'skeletal',
-                        role: 'arm',
+                        type: 'arm',
                         // skeletal: { name: 'left-forearm', options: { loop: true } },
                         offset: {
                           position: { x: 0, y: 0, z: 3 },
@@ -263,8 +260,7 @@ export const Characters = [
                         children: [
                           {
                             name: 'left-hand',
-                            type: 'skeletal',
-                            role: 'joint',
+                            type: 'joint',
                             offset: {
                               rotation: { y: 0 },
                               position: { x: 0, y: 0, z: 3 },
@@ -288,7 +284,7 @@ export const Characters = [
                             },
                             collider: {
                               shape: 'sphere',
-                              stats: { weight: 1 },
+                              stats: { weight: 3 },
                               size: { radius: 1 },
                               // enabled: false,
                             },

@@ -1,4 +1,4 @@
-import { Vector3, Euler, Spherical, BufferGeometry, Mesh } from 'three';
+import { Vector3, Euler, Spherical, Quaternion, BufferGeometry, Mesh } from 'three';
 
 import { createArrow } from './create-object';
 import { Actions, States, InputKeys, MashKeys, Pointers } from './constants';
@@ -37,6 +37,14 @@ class Player extends Character {
   #pos = new Vector3();
 
   #arrowDir = new Vector3();
+
+  #quat = new Quaternion();
+
+  #normal = new Vector3();
+
+  #angularVel = 0;
+
+  #deltaTheta = 0;
 
   constructor(game, name, subtype) {
     super(game, name, subtype);
@@ -102,7 +110,7 @@ class Player extends Character {
       method?.('jump');
     }
 
-    this.velocity.y = this.data.stats.jumpPower * value;
+    this.collidable.velocity.y = this.data.stats.jumpPower * value;
   }
 
   moveForward(deltaTime, value, action = -1) {
@@ -125,12 +133,11 @@ class Player extends Character {
       accel = airMoveAccel;
     }
 
-    // this.#forwardA.copy(InitialDir).applyEuler(this.collidable.rotation);
     this.#forwardA.copy(InitialDir).applyQuaternion(this.collidable.rotation);
     this.#sideA.crossVectors(this.#forwardA, Axis.y);
     this.#forwardA.applyAxisAngle(this.#sideA, sign(-value) * Game.RAD30);
 
-    this.velocity.add(this.#forwardA.multiplyScalar(accel * value * deltaTime));
+    this.collidable.velocity.add(this.#forwardA.multiplyScalar(accel * value * deltaTime));
   }
 
   rotate(deltaTime, direction, action = -1) {
@@ -138,17 +145,17 @@ class Player extends Character {
     const { turnSpeed, rotAccel } = this.data.stats;
 
     if (action === Actions.quickTurnLeft || action === Actions.quickTurnRight) {
-      this.angularVel = 0;
+      this.#angularVel = 0;
 
       const t0 = (this.#urgencyElapsedTime - deltaTime) / this.#urgencyDuration;
       const t1 = this.#urgencyElapsedTime / this.#urgencyDuration;
       const r0 = direction * urgencyTurn * easeOutQuad(t0);
       const r1 = direction * urgencyTurn * easeOutQuad(t1);
 
-      this.deltaTheta = r1 - r0;
+      this.#deltaTheta = r1 - r0;
     } else {
-      this.angularVel += rotAccel * deltaTime * direction;
-      this.angularVel = min(max(this.angularVel, -turnSpeed), turnSpeed);
+      this.#angularVel += rotAccel * deltaTime * direction;
+      this.#angularVel = min(max(this.#angularVel, -turnSpeed), turnSpeed);
     }
   }
 
@@ -174,7 +181,7 @@ class Player extends Character {
     this.#forwardB.copy(InitialDir).applyQuaternion(this.collidable.rotation);
     this.#sideB.crossVectors(this.#forwardB, Axis.y).normalize();
     this.#sideB.applyAxisAngle(this.#forwardB, sign(value) * Game.RAD30);
-    this.velocity.add(
+    this.collidable.velocity.add(
       this.#sideB.multiplyScalar(accel * value * moveSideCoef * deltaTime),
     );
   }
@@ -294,16 +301,53 @@ class Player extends Character {
     }
   }
 
+  update(deltaTime, elapsedTime, damping) {
+    super.update(deltaTime, elapsedTime, damping);
+
+    if (this.#angularVel !== 0) {
+      this.#angularVel += this.#angularVel * damping.spin;
+
+      if (
+        (this.#angularVel > 0 && this.#angularVel < EPS) ||
+        (this.#angularVel < 0 && this.#angularVel > -EPS)
+      ) {
+        this.#angularVel = 0;
+      }
+
+      this.#deltaTheta = this.#angularVel * deltaTime;
+    }
+
+    if (this.#deltaTheta !== 0) {
+      this.#quat.setFromAxisAngle(Axis.y, this.#deltaTheta);
+      this.collidable.updateDeltaRotation(this.#quat);
+
+      if (this.hasControls) {
+        this.publish('onRotate', this.collidable.quaternion, this.#deltaTheta);
+      }
+    }
+
+    this.#deltaTheta = 0;
+  }
+
   postUpdate(deltaTime) {
     super.postUpdate(deltaTime);
 
     if (this.hasControls) {
       const { stats } = this.data;
       const { position: cpos } = this.camera;
-      this.collidable.collider.getCenter(this.#pos);
-      // this.#pos.y += this.data.cameraOffsetY;
+      const { collider } = this.collidable;
+      collider.getCenter(this.#pos);
+
+      if (collider.type === 'capsule') {
+        this.#normal.copy(collider.getProp('normal'));
+      } else {
+        this.#normal.set(0, 0, 0);
+      }
+
+      
+      
       cpos.copy(this.#pos);
-      cpos.y += stats.cameraOffsetY; /// /////プレイヤーの傾きを考慮していない//////
+      cpos.addScaledVector(this.#normal, stats.cameraOffsetY);
 
       if (this.lookRotation.theta === 0 && this.lookRotation.phi === HalfPI) {
         if (this.arrow.visible) {
@@ -317,7 +361,7 @@ class Player extends Character {
         }
 
         apos.copy(this.#pos);
-        apos.y += stats.arrowOffsetY; /// /////プレイヤーの傾きを考慮していない//////
+        apos.addScaledVector(this.#normal, stats.arrowOffsetY);
 
         this.#arrowDir
           .copy(InitialDir)
@@ -327,12 +371,12 @@ class Player extends Character {
         const side = this.#sideC.crossVectors(this.#arrowDir, Axis.y);
         this.#arrowDir.applyAxisAngle(
           side,
-          this.lookRotation.phi - HalfPI, // + this.data.stats.arrowPitch,
+          this.lookRotation.phi - HalfPI,
         );
 
         apos.addScaledVector(
           this.#arrowDir,
-          stats.arrowOffsetZ, // 5,
+          stats.arrowOffsetZ,
         );
         this.arrow.quaternion.copy(this.collidable.quaternion);
       }

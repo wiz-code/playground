@@ -47,12 +47,14 @@ class Obstacle extends Entity {
       return;
     }
 
-    this.velocity.y -= World.gravity * deltaTime;
-    this.velocity.addScaledVector(this.velocity, damping[this.type]);
+    const { velocity } = this.collidable;
+    velocity.y -= World.gravity * deltaTime;
+    velocity.addScaledVector(velocity, damping[this.type]);
     // this.#dir.copy(this.velocity).normalize();
     // this.rotation.setFromVector3(this.#dir);
 
-    this.#move.copy(this.velocity).multiplyScalar(deltaTime);
+    this.#move.copy(velocity).multiplyScalar(deltaTime);
+
     this.#dir.copy(this.#move).normalize();
     // this.rotation.setFromVector3(this.#dir);
 

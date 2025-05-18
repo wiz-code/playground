@@ -521,7 +521,7 @@ class WorkerMain {
       this.objectManager.add(enemy);
     }
 
-    for (let i = 0; i < 20 /* 100 */; i += 1) {
+    for (let i = 0; i < 2 /* 100 */; i += 1) {
       const rx = Math.random() * 20 - 10;
       const rz = Math.random() * 40 - 10;
 

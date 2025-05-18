@@ -21,17 +21,11 @@ export const ProcessingOrder = [
   'right-elbow',
 ];
 
-export const ActionTimes = new Map([
-  [States.FightingPose, [0, 1]],
-  [States.TestStart, [0, 1]],
-  [States.TestFinish, [0, 1]],
-]);
-
 export const Keyframes = new Map([
   [
     Commands.HandsUp,
     {
-      times: [0, 5, 10],
+      times: [0, 2, 6],
       states: [States.Idle, States.HandsUpStart, States.HandsUpFinish],
     },
   ],

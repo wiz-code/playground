@@ -57,8 +57,6 @@ class ObjectManager extends Publisher {
 
   #t2 = new Vector3();
 
-  #vel = new Vector3();
-
   #move = new Vector3();
 
   #move1 = new Vector3();
@@ -169,7 +167,8 @@ class ObjectManager extends Publisher {
   }
 
   #collisionWithTerrain(object, geometry, refitSet, movableList) {
-    const { type, velocity, collidable } = object;
+    const { type, collidable } = object;
+    const { velocity } = collidable;
     this.#move.set(0, 0, 0);
 
     if (type === 'character') {
@@ -287,15 +286,17 @@ class ObjectManager extends Publisher {
       }
 
       if (result !== false) {
-        if (collider.type === 'capsule') {
+        if (type === 'character') {
           const onGround = result.normal.y > COS45;
-          object.setGrounded(onGround);
 
+          // 着地時はバウンドを無効に
           if (!onGround) {
             velocity.addScaledVector(
               result.normal,
               -result.normal.dot(velocity),
             );
+          } else if (!object.isGrounded()) {
+            object.setGrounded(onGround);
           }
 
           if (this.#triangleIndexSet.size > 0) {
@@ -312,8 +313,10 @@ class ObjectManager extends Publisher {
             }
           }
 
-          if (result.depth >= Game.EPS) {
-            this.#move.add(result.normal.multiplyScalar(result.depth));
+          const fallingDistance = object.getFallingDistance();
+
+          if (onGround && fallingDistance >= World.fallingDeathDistance) {
+            this.eventManager.dispatch(null, 'fall-down', object);
           }
         } else {
           // object.addBounceCount();
@@ -322,19 +325,10 @@ class ObjectManager extends Publisher {
             result.normal,
             -result.normal.dot(velocity) * 1.5,
           );
-
-          this.#move.add(result.normal.multiplyScalar(result.depth));
         }
 
-        if (type === 'character') {
-          const fallingDistance = object.getFallingDistance();
-
-          if (
-            object.isGrounded() &&
-            fallingDistance >= World.fallingDeathDistance
-          ) {
-            this.eventManager.dispatch(null, 'fall-down', object);
-          }
+        if (result.depth >= Game.EPS) {
+          this.#move.add(result.normal.multiplyScalar(result.depth));
         }
       }
     });
@@ -350,9 +344,9 @@ class ObjectManager extends Publisher {
     this.#move1.set(0, 0, 0);
     this.#move2.set(0, 0, 0);
 
-    a1.collidable.traverse(({ collider: ca1 }) => {
+    a1.collidable.traverse(({ collider: ca1, velocity: v1 }) => {
       if (ca1.isEnabled()) {
-        a2.collidable.traverse(({ collider: ca2 }) => {
+        a2.collidable.traverse(({ collider: ca2, velocity: v2 }) => {
           if (ca2.isEnabled()) {
             if (ca1.type === 'capsule' && ca2.type === 'capsule') {
               let collided = false;
@@ -374,8 +368,6 @@ class ObjectManager extends Publisher {
               if (depth > 0) {
                 collided = true;
 
-                const v1 = a1.velocity;
-                const v2 = a2.velocity;
                 const m1 = ca1.stats.weight;
                 const m2 = ca2.stats.weight;
                 const m = m1 + m2;
@@ -415,8 +407,6 @@ class ObjectManager extends Publisher {
                 collided = true;
 
                 if (a2.type !== 'item') {
-                  const v1 = a1.velocity;
-                  const v2 = a2.velocity;
                   const m1 = ca1.stats.weight;
                   const m2 = ca2.stats.weight;
                   const m = m1 + m2;
@@ -481,21 +471,19 @@ class ObjectManager extends Publisher {
                 collided = true;
 
                 if (a1.type !== 'item') {
-                  const v1 = a2.velocity;
-                  const v2 = a1.velocity;
-                  const m1 = ca2.stats.weight;
-                  const m2 = ca1.stats.weight;
+                  const m1 = ca1.stats.weight;
+                  const m2 = ca2.stats.weight;
                   const m = m1 + m2;
 
-                  const rv = this.#vecB.subVectors(v1, v2);
+                  const rv = this.#vecB.subVectors(v2, v1);
                   const dot = rv.dot(normal);
 
                   if (dot <= 0) {
                     const j = (-(1 + Restitution) * dot * (m1 * m2)) / m;
                     this.#vecC.copy(normal).multiplyScalar(j);
 
-                    v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
-                    v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
+                    v2.add(this.#vecD.copy(this.#vecC).divideScalar(m2));
+                    v1.sub(this.#vecE.copy(this.#vecC).divideScalar(m1));
                   }
 
                   const diff = this.#vecF.copy(normal).multiplyScalar(depth);
@@ -548,8 +536,6 @@ class ObjectManager extends Publisher {
               if (d2 < rr) {
                 const normal = this.#vecA.subVectors(c1, c2).normalize();
 
-                const v1 = a1.velocity;
-                const v2 = a2.velocity;
                 const m1 = ca1.stats.weight;
                 const m2 = ca2.stats.weight;
                 const m = m1 + m2;

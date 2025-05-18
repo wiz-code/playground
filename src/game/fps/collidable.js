@@ -55,6 +55,9 @@ class Collidable {
     this.parent = parent;
     this.children = [];
 
+    this.velocity = new Vector3();
+    this.prevPos = new Vector3();
+
     /// /////
     this.mesh = new Object3D();
     /// ////
@@ -66,21 +69,18 @@ class Collidable {
       body,
       collider,
       skeletal,
-      role,
       children = [],
     } = data;
 
     this.name = name;
     this.type = type ?? 'object';
     this.offset = offset ?? {};
-    this.role = role ?? 'joint';
 
     if (body.shape === 'body') {
       this.body = createBody(
         object.subtype,
         name,
         this.type,
-        this.role,
         body,
         this.offset,
       );
@@ -89,13 +89,12 @@ class Collidable {
         object.subtype,
         name,
         this.type,
-        this.role,
         body,
         this.offset,
       );
       /// ////////
-      let geom = new CapsuleGeometry(1.1, 10, 4, 8, 3);
-      geom.translate(0, 5, 0);
+      let geom = new CapsuleGeometry(body.size.radius * 1.1, body.size.height, 4, 8, 3);
+      geom.translate(0, body.size.height * 0.5, 0);
       geom = new EdgesGeometry(geom);
       const mat = new MeshBasicMaterial({
         color: 0x5aff19,
@@ -114,7 +113,7 @@ class Collidable {
         this.offset,
       );
       /// //////////
-      let geom = new SphereGeometry(1.2, 8, 4);
+      let geom = new SphereGeometry(body.size.radius * 1.1, 8, 4);
       geom = new EdgesGeometry(geom);
       const mat = new MeshBasicMaterial({
         color: 0x5aff19,
@@ -141,12 +140,12 @@ class Collidable {
       bounds = new Box3(collider.min, collider.max);
     }
 
-    this.collider = new Collider(object, bounds, collider.stats, this.role);
+    this.collider = new Collider(object, bounds, collider.stats, this.type);
     this.collider.enable(collider.enabled ?? true);
 
     this.skeletal = null;
 
-    if (skeletal != null && this.parent != null) {
+    if (skeletal != null/* && this.parent != null*/) {
       const { name, options } = skeletal;
       this.skeletal = new Skeletal(name, this.object, this, options);
     }
@@ -177,7 +176,7 @@ class Collidable {
       const { parent, body } = col;
 
       if (parent != null) {
-        if (parent.type === 'skeletal' && parent.role === 'arm') {
+        if (parent.type === 'arm') {
           const { height } = parent.body.geometry.parameters;
           body.translateZ(height);
         }
@@ -213,7 +212,7 @@ class Collidable {
 
   updateDeltaRotation(quat) {
     this.traverse((col, depth) => {
-      const { role, joinTo, parent, collider, rotation, position, quaternion } =
+      const { type, parent, collider, rotation, position, quaternion } =
         col;
 
       if (depth === 0) {
@@ -223,14 +222,14 @@ class Collidable {
       if (parent == null) {
         quaternion.copy(rotation);
       } else {
-        const { role: pr, collider: pc, quaternion: pq } = parent;
+        const { type: pt, collider: pc, quaternion: pq } = parent;
 
         quaternion.multiplyQuaternions(pq, rotation);
 
-        if (role === 'arm') {
+        if (type === 'arm') {
           collider.rotateCapsule(quaternion);
 
-          if (pr === 'arm') {
+          if (pt === 'arm') {
             this.#v1.copy(pc.getProp('end'));
           } else {
             pc.getCenter(this.#v1);
@@ -242,7 +241,7 @@ class Collidable {
           collider.moveTo(this.#v1);
           collider.moveBy(this.#v2);
         } else {
-          if (pr === 'arm') {
+          if (pt === 'arm') {
             this.#v1.copy(pc.getProp('end'));
           } else {
             pc.getCenter(this.#v1);
@@ -284,7 +283,7 @@ class Collidable {
     const quat = new Quaternion();
 
     root.traverse((col, depth) => {
-      const { role, offset, rotation, position } = col;
+      const { offset, rotation, position } = col;
       const { rotation: rot = {}, position: pos = {} } = offset;
 
       euler.x = rot.x ?? 0;

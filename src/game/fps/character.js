@@ -35,8 +35,6 @@ class Character extends Entity {
 
   #pos = new Vector3();
 
-  #quat = new Quaternion();
-
   #rot = new Euler();
 
   #v1 = new Vector3();
@@ -45,8 +43,6 @@ class Character extends Entity {
 
   constructor(game, name, subtype) {
     super(game, name, 'character', subtype, Characters);
-
-    this.deltaTheta = 0;
 
     this.collidable = new Collidable(this, null, this.data.collidable);
     Collidable.init(this.collidable);
@@ -83,7 +79,7 @@ class Character extends Entity {
 
   resetCoords() {
     Collidable.init(this.collidable);
-    this.velocity.set(0, 0, 0);
+    this.collidable.velocity.set(0, 0, 0);
     this.#fallingDistance = 0;
   }
 
@@ -94,54 +90,31 @@ class Character extends Entity {
   update(deltaTime, elapsedTime, damping) {
     super.update(deltaTime, elapsedTime, damping);
 
+    const { velocity } = this.collidable;
+
     if (!this.#isGrounded) {
       const falling = World.gravity * deltaTime;
-      this.velocity.y -= falling;
+      velocity.y -= falling;
     }
 
     // 減衰処理
     const deltaDamping = this.#isGrounded ? damping.ground : damping.air;
 
-    // 回転の減衰
-    if (this.angularVel !== 0) {
-      this.angularVel += this.angularVel * damping.spin;
-
-      if (
-        (this.angularVel > 0 && this.angularVel < EPS) ||
-        (this.angularVel < 0 && this.angularVel > -EPS)
-      ) {
-        this.angularVel = 0;
-      }
-
-      this.deltaTheta = this.angularVel * deltaTime;
-    }
-
-    if (this.deltaTheta !== 0) {
-      this.#quat.setFromAxisAngle(Axis.y, this.deltaTheta); /// //
-      this.collidable.updateDeltaRotation(this.#quat); /// //
-
-      if (this.hasControls) {
-        this.publish('onRotate', this.collidable.quaternion, this.deltaTheta);
-      }
-    }
-
-    this.deltaTheta = 0;
-
     // 移動の減衰
-    this.velocity.addScaledVector(this.velocity, deltaDamping);
-    const lengthSq = this.velocity.lengthSq();
+    velocity.addScaledVector(velocity, deltaDamping);
+    const lengthSq = velocity.lengthSq();
 
     if (lengthSq < EPS ** 2) {
-      this.velocity.set(0, 0, 0);
+      velocity.set(0, 0, 0);
     }
 
-    if (this.velocity.y < 0) {
+    if (velocity.y < 0) {
       this.#fallingDistance += this.#move.y;
     } else {
       this.#fallingDistance = 0;
     }
 
-    this.#v1.copy(this.velocity);
+    this.#v1.copy(velocity);
 
     if (this.platform != null) {
       this.#v2.copy(this.platform.velocity);
@@ -165,7 +138,7 @@ class Character extends Entity {
     if (!this.hasControls) {
       this.collidable.traverse((col) => {
         //console.log(this.name, col.name, col.body.position)
-        col.collider.getCenter(this.#pos, col.role === 'arm');
+        col.collider.getCenter(this.#pos, col.type === 'arm');
         col.mesh.position.copy(this.#pos);
         q2.multiplyQuaternions(col.quaternion, q1);
         col.mesh.quaternion.copy(q2);

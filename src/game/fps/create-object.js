@@ -190,7 +190,7 @@ export const createSphere = (subtype, name, type, body, offset) => {
       );
     }
 
-    if (type === 'skeletal') {
+    if (type === 'joint') {
       geometry.body.rotateX(PI * 0.5);
 
       if (wireframe) {
@@ -292,7 +292,7 @@ export const createSphere = (subtype, name, type, body, offset) => {
   return mesh.body;
 };
 
-export const createCapsule = (subtype, name, type, role, body, offset) => {
+export const createCapsule = (subtype, name, type, body, offset) => {
   const {
     wireframe = false,
     satellite = false,
@@ -354,17 +354,17 @@ export const createCapsule = (subtype, name, type, role, body, offset) => {
       geometry.points.center();*/
     }
 
-    if (type === 'skeletal') {
+    if (type === 'joint' || type === 'arm') {
       geometry.body.rotateX(PI * 0.5);
 
-      if (role === 'arm') {
+      if (type === 'arm') {
         geometry.body.translate(0, 0, size.height * 0.5);
       }
 
       if (wireframe) {
         geometry.wire.rotateX(PI * 0.5);
 
-        if (role === 'arm') {
+        if (type === 'arm') {
           geometry.wire.translate(0, 0, size.height * 0.5);
         }
       }
@@ -372,7 +372,7 @@ export const createCapsule = (subtype, name, type, role, body, offset) => {
       if (satellite) {
         geometry.points.rotateX(PI * 0.5);
 
-        if (role === 'arm') {
+        if (type === 'arm') {
           geometry.points.translate(0, 0, size.height * 0.5);
         }
       }
@@ -472,7 +472,6 @@ export const createBody = (
   subtype,
   name,
   type,
-  role,
   { style, size, transform = {}, wireframe, satellite },
   offset,
 ) => {
@@ -484,7 +483,6 @@ export const createBody = (
     subtype,
     name,
     type,
-    role,
     { style, size, transform, wireframe, satellite },
     offset,
   );

@@ -10,8 +10,6 @@ import Updater from './updater';
 class Entity extends EventDispatcher {
   #states = new Set();
 
-  #center = new Vector3();
-
   #vec = new Vector3();
 
   #pos = new Vector3();
@@ -25,6 +23,10 @@ class Entity extends EventDispatcher {
   #stunningElapsedTime = 0;
 
   #stunningDuration = 0;
+
+  #center = new Vector3();
+
+  #prevCenter = new Vector3();
 
   constructor(game, name, type, subtype, source) {
     super();
@@ -41,9 +43,6 @@ class Entity extends EventDispatcher {
     this.params = {};
 
     this.platform = null;
-
-    this.velocity = new Vector3();
-    this.angularVel = 0;
 
     this.hasControls = false;
     this.collidable = null;
@@ -83,7 +82,7 @@ class Entity extends EventDispatcher {
 
   hide() {
     if (this.collidable != null) {
-      this.#pos.copy(this.collidable.collider.getCenter(this.#center));
+      this.collidable.collider.getCenter(this.#pos);
       getRandomDistance(Game.longDistance, this.#randVec);
       this.collidable.updatePosition(this.#randVec);
     }
@@ -215,10 +214,17 @@ class Entity extends EventDispatcher {
 
   preUpdate(deltaTime) {
     if (this.collidable != null) {
-      this.collidable.traverse(({ skeletal }) => {
+      this.collidable.traverse(({ name, parent, velocity, skeletal, collider, prevPos }) => {
         if (skeletal != null) {
           skeletal.update(deltaTime);
         }
+
+        if (parent != null) {
+          collider.getCenter(this.#center);
+          velocity.subVectors(this.#center, prevPos).divideScalar(deltaTime);
+          prevPos.copy(this.#center);
+          //this.name === '敵キャラ１' && console.log(name, velocity, velocity.length())
+      } 
       });
     }
   }

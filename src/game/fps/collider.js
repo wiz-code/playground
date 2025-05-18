@@ -21,7 +21,7 @@ class Collider {
 
   #bounds = null;
 
-  constructor(object, bounds, stats = {}, role = 'joint') {
+  constructor(object, bounds, stats = {}, role = 'object') {
     this.object = object;
     this.#bounds = bounds;
     this.stats = stats;

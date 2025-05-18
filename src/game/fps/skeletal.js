@@ -19,7 +19,6 @@ import {
   Keyframes,
   ProcessingOrder,
   Posings,
-  ActionTimes,
 } from './data/skeletals';
 import { Axis } from './settings';
 
@@ -40,10 +39,12 @@ class Skeletal {
     this.keys = new Set();
     this.transform = {
       quaternion: new Quaternion(),
+      position: new Vector3(),
     };
 
     this.mixer = new AnimationMixer(this.transform);
     this.clips = [];
+    this.prevMap = new Map();
 
     this.states = new Set(); /// ///////
 
@@ -85,6 +86,8 @@ class Skeletal {
               if (!results.has(key)) {
                 results.set(key, []);
               }
+
+              //TODO
             }
           }
         }
@@ -115,6 +118,11 @@ class Skeletal {
         const clip = new AnimationClip(clipName, -1, tracks);
 
         this.clips.push(clip);
+        const prev = {
+          quaternion: new Quaternion(),
+          position: new Vector3(),
+        };
+        this.prevMap.set(clip, prev);
       }
     }
   }
@@ -141,6 +149,7 @@ class Skeletal {
       for (let i = 0, l = this.clips.length; i < l; i += 1) {
         const clip = this.clips[i];
         const action = this.mixer.existingAction(clip);
+        const prev = this.prevMap.get(clip);
 
         if (action != null && action.isRunning()) {
           const { body } = this.collidable;
@@ -148,14 +157,12 @@ class Skeletal {
 
           for (const key of this.keys) {
             if (key.includes('.quaternion')) {
-              // body.quaternion.copy(quaternion);
-
-              if (!quaternion.equals(this.#prevQuat)) {
+              if (!quaternion.equals(prev.quaternion)) {
                 this.#deltaQuat.copy(quaternion);
-                this.#deltaQuat.multiply(this.#prevQuat.conjugate());
+                this.#deltaQuat.multiply(prev.quaternion.conjugate());
 
                 this.collidable.updateDeltaRotation(this.#deltaQuat);
-                this.#prevQuat.copy(quaternion);
+                prev.quaternion.copy(quaternion);
 
                 body.quaternion.multiply(this.#deltaQuat);
               }
