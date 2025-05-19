@@ -32,7 +32,7 @@ import Movable from './movable';
 
 import { offsetPosition, disposeObject } from './utils';
 
-const { floor, min, exp } = Math;
+const { floor, round, min, exp } = Math;
 const levelMap = new Map(Levels);
 
 const { baseResistance } = World;
@@ -695,7 +695,7 @@ class WorkerMain {
     this.#elapsedTime = currentTime - this.#startTime;
 
     const deltaTime = this.#elapsedTime - elapsedTime;
-    const additional = floor(deltaTime / GameSettings.FPS60);
+    const additional = round(deltaTime / GameSettings.FPS60);
     const stepsPerFrame = min(
       GameSettings.stepsPerFrame + additional,
       GameSettings.maxSteps,

@@ -95,6 +95,12 @@ class Character extends Entity {
     if (!this.#isGrounded) {
       const falling = World.gravity * deltaTime;
       velocity.y -= falling;
+
+      if (velocity.y < 0) {
+        this.#fallingDistance -= velocity.y * deltaTime;
+      }
+    } else {
+      this.#fallingDistance = 0;
     }
 
     // 減衰処理
@@ -108,13 +114,7 @@ class Character extends Entity {
       velocity.set(0, 0, 0);
     }
 
-    if (velocity.y < 0) {
-      this.#fallingDistance += this.#move.y;
-    } else {
-      this.#fallingDistance = 0;
-    }
-
-    this.#v1.copy(velocity);
+    /*this.#v1.copy(velocity);
 
     if (this.platform != null) {
       this.#v2.copy(this.platform.velocity);
@@ -124,7 +124,15 @@ class Character extends Entity {
       this.#v2.set(0, 0, 0);
     }
 
-    this.#move.copy(this.#v1).multiplyScalar(deltaTime);
+    this.#move.copy(this.#v1).multiplyScalar(deltaTime);*/
+    if (this.platform != null) {
+      this.#v1.copy(velocity);
+      this.#v1.add(this.platform.velocity);
+      this.#move.copy(this.#v1).multiplyScalar(deltaTime);
+    } else {
+      this.#move.copy(velocity).multiplyScalar(deltaTime);
+    }
+
     this.collidable.traverse(({ collider }) => {
       collider.moveBy(this.#move);
     });

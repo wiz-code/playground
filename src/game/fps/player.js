@@ -46,6 +46,8 @@ class Player extends Character {
 
   #deltaTheta = 0;
 
+  #precededActions = new Map();
+
   constructor(game, name, subtype) {
     super(game, name, subtype);
 
@@ -102,6 +104,24 @@ class Player extends Character {
 
     this.unsetControls();
     this.arrow = null;
+  }
+
+  setUrgency() {
+    this.addState(States.urgency);
+
+    if (
+      this.#actions.has(Actions.quickTurnLeft) ||
+      this.#actions.has(Actions.quickTurnRight)
+    ) {
+      this.#urgencyDuration = World.urgencyTurnDuration;
+    } else {
+      this.#urgencyDuration = World.urgencyDuration;
+    }
+
+    if (this.hasControls) {
+      const method = this.game.methods.get('play-sound');
+      method?.('dash');
+    }
   }
 
   jump(value = 1) {
@@ -187,9 +207,53 @@ class Player extends Character {
   }
 
   input(actions, urgency) {
-    // スタン中は入力を受け付けない
+    // 緊急行動中は入力を受け付けない
+    if (this.hasState(States.urgency)) {
+      return;
+    }
+
+    // 前回のアクションを消去
+    this.#actions.clear();
+
+    // スタン中の緊急回避の先行入力は記録しておく
+    if (this.isStunning()) {
+      if (urgency) {
+        actions.forEach((value, key) => this.#precededActions.set(key, value));
+      }
+      return;
+    }
+
+    // コントロールから渡されたアクションデータをコピー
+    actions.forEach((value, key) => this.#actions.set(key, value));
+
+    // 緊急行動の初回の処理
+    if (urgency) {
+      this.setUrgency();
+      /*this.addState(States.urgency);
+
+      if (
+        actions.has(Actions.quickTurnLeft) ||
+        actions.has(Actions.quickTurnRight)
+      ) {
+        this.#urgencyDuration = World.urgencyTurnDuration;
+      } else {
+        this.#urgencyDuration = World.urgencyDuration;
+      }
+
+      if (this.hasControls) {
+        const method = this.game.methods.get('play-sound');
+        method?.('dash');
+      }*/
+    }
+  }
+
+  /*input(actions, urgency) {
+    // スタン中は緊急回避行動以外の入力を受け付けない
     if (this.hasState(States.stunning)) {
       this.#actions.clear();
+
+      // 先行入力を記録しておく
+      actions.forEach((value, key) => this.#precededActions.set(key, value));
       return;
     }
 
@@ -197,7 +261,7 @@ class Player extends Character {
     if (!this.hasState(States.urgency)) {
       // 前回のアクションを消去
       this.#actions.clear();
-      actions.forEach((action, value) => this.#actions.set(value, action));
+      actions.forEach((value, key) => this.#actions.set(key, value));
 
       if (urgency) {
         this.addState(States.urgency);
@@ -217,9 +281,15 @@ class Player extends Character {
         }
       }
     }
-  }
+  }*/
 
-  steer(deltaTime, elapsedTime, damping) {
+  steer(deltaTime) {
+    if (this.#precededActions.size > 0 && !this.isStunning()) {
+      this.#precededActions.forEach((value, key) => this.#actions.set(key, value));
+      this.setUrgency();
+      this.#precededActions.clear();
+    }
+
     if (this.#actions.has(Actions.jump) && this.isGrounded()) {
       const value = this.#actions.get(Actions.jump);
       this.jump(value);
@@ -228,7 +298,8 @@ class Player extends Character {
 
     if (this.#actions.has(Actions.trigger)) {
       const value = this.#actions.get(Actions.trigger);
-      // this.fire(value);
+      // this.trigger(value);
+      // 連射可能かどうかで以下分岐
       this.#actions.delete(Actions.trigger);
     }
 
@@ -271,7 +342,6 @@ class Player extends Character {
       }
     } else {
       // 通常時アクション
-
       if (this.#actions.has(Actions.rotateLeft)) {
         const value = this.#actions.get(Actions.rotateLeft);
         this.rotate(deltaTime, value);
@@ -299,6 +369,12 @@ class Player extends Character {
         this.moveSide(deltaTime, value);
       }
     }
+  }
+
+  preUpdate(deltaTime) {
+    super.preUpdate(deltaTime);
+
+    this.steer(deltaTime);
   }
 
   update(deltaTime, elapsedTime, damping) {

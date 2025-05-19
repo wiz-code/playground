@@ -210,32 +210,7 @@ class Entity extends EventDispatcher {
     this.clear('chain-updater');
   }
 
-  steer() {}
-
   preUpdate(deltaTime) {
-    if (this.collidable != null) {
-      this.collidable.traverse(({ name, parent, velocity, skeletal, collider, prevPos }) => {
-        if (skeletal != null) {
-          skeletal.update(deltaTime);
-        }
-
-        if (parent != null) {
-          collider.getCenter(this.#center);
-          velocity.subVectors(this.#center, prevPos).divideScalar(deltaTime);
-          prevPos.copy(this.#center);
-          //this.name === '敵キャラ１' && console.log(name, velocity, velocity.length())
-      } 
-      });
-    }
-  }
-
-  postUpdate(deltaTime) {
-    //
-  }
-
-  update(deltaTime, elapsedTime, damping) {
-    super.update(deltaTime, elapsedTime);
-
     if (this.#lapTimer) {
       this.#lapTime += deltaTime;
     }
@@ -248,8 +223,28 @@ class Entity extends EventDispatcher {
         this.#stunningElapsedTime = 0;
       }
     }
+  }
 
-    this.steer(deltaTime, elapsedTime, damping);
+  postUpdate(deltaTime) {
+    //
+  }
+
+  update(deltaTime, elapsedTime, damping) {
+    super.update(deltaTime, elapsedTime);
+
+    if (this.collidable != null) {
+      this.collidable.traverse(({ parent, velocity, skeletal, collider, prevPos }) => {
+        if (skeletal != null) {
+          skeletal.update(deltaTime);
+        }
+
+        if (parent != null) {
+          collider.getCenter(this.#center);
+          velocity.subVectors(this.#center, prevPos).divideScalar(deltaTime);
+          prevPos.copy(this.#center);
+        } 
+      });
+    }
 
     for (let i = 0, l = this.updaters.length; i < l; i += 1) {
       const updater = this.updaters[i];

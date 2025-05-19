@@ -343,6 +343,8 @@ class ObjectManager extends Publisher {
     const { states } = this.game;
     this.#move1.set(0, 0, 0);
     this.#move2.set(0, 0, 0);
+    const { velocity: av1 } = a1.collidable;
+    const { velocity: av2 } = a2.collidable;
 
     a1.collidable.traverse(({ collider: ca1, velocity: v1 }) => {
       if (ca1.isEnabled()) {
@@ -379,8 +381,10 @@ class ObjectManager extends Publisher {
                   const j = (-(1 + Restitution) * dot * (m1 * m2)) / m;
                   this.#vecC.copy(normal).multiplyScalar(j);
 
-                  v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
-                  v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
+                  //v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
+                  //v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
+                  av1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
+                  av2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
                 }
 
                 this.#move1.add(normal.multiplyScalar(depth));
@@ -418,8 +422,10 @@ class ObjectManager extends Publisher {
                     const j = (-(1 + Restitution) * dot * (m1 * m2)) / m;
                     this.#vecC.copy(normal).multiplyScalar(j);
 
-                    v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
-                    v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
+                    //v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
+                    //v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
+                    av1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
+                    av2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
                   }
 
                   const diff = this.#vecF.copy(normal).multiplyScalar(depth);
@@ -482,8 +488,10 @@ class ObjectManager extends Publisher {
                     const j = (-(1 + Restitution) * dot * (m1 * m2)) / m;
                     this.#vecC.copy(normal).multiplyScalar(j);
 
-                    v2.add(this.#vecD.copy(this.#vecC).divideScalar(m2));
-                    v1.sub(this.#vecE.copy(this.#vecC).divideScalar(m1));
+                    //v2.add(this.#vecD.copy(this.#vecC).divideScalar(m2));
+                    //v1.sub(this.#vecE.copy(this.#vecC).divideScalar(m1));
+                    av2.add(this.#vecD.copy(this.#vecC).divideScalar(m2));
+                    av1.sub(this.#vecE.copy(this.#vecC).divideScalar(m1));
                   }
 
                   const diff = this.#vecF.copy(normal).multiplyScalar(depth);
@@ -548,8 +556,10 @@ class ObjectManager extends Publisher {
 
                   this.#vecC.copy(normal).multiplyScalar(j);
 
-                  v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
-                  v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
+                  //v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
+                  //v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
+                  av1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
+                  av2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
                 }
 
                 const d = (r - sqrt(d2)) / 2;
@@ -631,6 +641,7 @@ class ObjectManager extends Publisher {
   update(deltaTime, elapsedTime, damping, currentStep, steps) {
     const list = Array.from(this.list.keys());
     const len = this.list.size;
+    const totalTime = deltaTime * steps;
 
     for (let i = 0; i < len; i += 1) {
       const object = list[i];
@@ -639,7 +650,7 @@ class ObjectManager extends Publisher {
         const { type, collidable } = object;
 
         if (currentStep === 1) {
-          object.preUpdate(deltaTime * steps);
+          object.preUpdate(totalTime);
         }
 
         object.update(deltaTime, elapsedTime, damping);
@@ -660,7 +671,7 @@ class ObjectManager extends Publisher {
     if (currentStep === steps) {
       for (let i = 0; i < len; i += 1) {
         const object = list[i];
-        object.postUpdate(deltaTime * steps);
+        object.postUpdate(totalTime);
       }
     }
   }

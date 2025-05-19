@@ -19,8 +19,7 @@ class Movable extends Publisher {
     this.id = genId('movable');
     this.name = name;
 
-    this.deltaPos = new Vector3();
-    this.velocity = new Vector3(); /// ////////
+    this.velocity = new Vector3();
 
     this.geometry = null;
     this.offset = 0;
@@ -50,7 +49,6 @@ class Movable extends Publisher {
 
   dispose() {
     this.params = null;
-    this.deltaPos.set(0, 0, 0);
 
     this.clearObject();
     this.clear('chain-updater');
@@ -93,8 +91,7 @@ class Movable extends Publisher {
     const [x, y, z] = positions.subarray(index, index + 3);
     this.#currentPos.set(x, y, z);
 
-    this.deltaPos.subVectors(this.#currentPos, this.#prevPos); /// ///////
-    this.velocity.copy(this.deltaPos).divideScalar(deltaTime); /// //////////
+    this.velocity.subVectors(this.#currentPos, this.#prevPos).divideScalar(deltaTime);
     this.#prevPos.copy(this.#currentPos);
   }
 }
