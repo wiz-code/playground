@@ -158,9 +158,17 @@ class Character extends Entity {
     body.quaternion.copy(this.collidable.quaternion);
 
     if (this.isAlive()) {
-      this.collidable.traverse(({ body, collider }) => {
-        const points = body.getObjectByName('points');
-        // points.rotation.y -= deltaTime * this.data.stats.satelliteSpeed;
+      const rot = deltaTime * this.data.stats.satelliteSpeed;
+      this.collidable.traverse(({ type, satellite }, depth) => {
+        const coef = depth % 2 === 0 ? -1 : 1;
+
+        if (satellite != null) {
+          if (type === 'joint' || type === 'arm') {
+            satellite.rotation.z += rot * coef;
+          } else {
+            satellite.rotation.y += rot * coef;
+          }
+        }
       });
     }
   }

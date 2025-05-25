@@ -125,6 +125,18 @@ class Collidable {
       this.body = new Object3D();
       this.body.name = name;
     }
+/*console.log(1, this.body)
+  this.body.traverse((child) => {
+    if (child.geometry == null) return;
+    console.log(child.name, child.geometry.getAttribute('position').array);
+  })*/
+
+    this.satellite = null;
+    const satellite = this.body.getObjectByName('points');
+
+    if (satellite != null) {
+      this.satellite = satellite;
+    }
 
     let bounds;
 

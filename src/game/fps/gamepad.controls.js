@@ -182,16 +182,41 @@ class GamepadControls extends Publisher {
     for (let i = 0, l = buttons.length; i < l; i += 1) {
       const button = buttonList[i];
       const value = buttons[i];
+
       this.buttons.set(button, value);
+
+      if (nonRepeatableButtonList.includes(button)) {
+        if (this.#pendings.has(button) && value === 0) {
+          this.#pendings.delete(button);
+
+          if (button === 'rsb') {
+            this.#povLock = false;
+            this.#resetPointer = true;
+          } else if (button === 'y') {
+            this.#resetWheel = true;
+          }
+        }
+      }
     }
+    /*for (let i = 0, l = buttons.length; i < l; i += 1) {
+      const button = buttonList[i];
+      const value = buttons[i];
+      this.buttons.set(button, value);
+    }*/
 
     for (let i = 0, l = axes.length; i < l; i += 1) {
       const axis = axisList[i];
       const value = axes[i];
       this.axes.set(axis, value);
+
+      if (nonRepeatableAxisList.includes(axis)) {
+        if (value < -1 + StickEPS) {
+          this.#pendings.delete(axis);
+        }
+      }
     }
 
-    nonRepeatableButtonList.forEach((button) => {
+    /*nonRepeatableButtonList.forEach((button) => {
       const index = buttonMap.get(button);
       const value = buttons[index];
 
@@ -205,37 +230,118 @@ class GamepadControls extends Publisher {
           this.#resetWheel = true;
         }
       }
-    });
+    });*/
 
-    nonRepeatableAxisList.forEach((axis) => {
+    /*nonRepeatableAxisList.forEach((axis) => {
       const index = axisMap.get(axis);
       const value = axes[index];
 
       if (value < -1 + StickEPS) {
         this.#pendings.delete(axis);
       }
-    });
+    });*/
 
     this.#actions.clear();
-    let urgency = false;
+    const mashed = this.buttons.get('x');
+
+    if (!this.#pendings.has('x')) {
+      if (mashed === 1) {
+        this.#pendings.add('x');
+        this.#mashed = 1;
+      }
+    }
+
+    const urgency = this.#mashed === 1;
+
+    let value = this.axes.get('lsy');
+
+    if (value < -StickEPS) {
+      if (this.#mashed === 1) {this.#mashed = 0;
+        this.#actions.set(Actions.quickMoveForward, 1);
+      } else if (
+        this.buttons.get('lsb') === 1 ||
+        this.buttons.get('lt') === 1 ||
+        this.axes.get('lt2') > 0
+      ) {
+        this.#actions.set(Actions.sprint, -value);
+      } else {
+        this.#actions.set(Actions.moveForward, -value);
+      }
+    } else if (value > StickEPS) {
+      if (this.#mashed === 1) {this.#mashed = 0;
+        this.#actions.set(Actions.quickMoveBackward, -1);
+      } else {
+        this.#actions.set(Actions.moveBackward, -value);
+      }
+    }
+
+    value = this.axes.get('lsx');
+
+    if (value > StickEPS) {
+      if (this.#mashed === 1) {this.#mashed = 0;
+        this.#actions.set(Actions.quickTurnRight, -1);
+      } else {
+        this.#actions.set(Actions.rotateRight, -value);
+      }
+    } else if (value < -StickEPS) {
+      if (this.#mashed === 1) {this.#mashed = 0;
+        this.#actions.set(Actions.quickTurnLeft, 1);
+      } else {
+        this.#actions.set(Actions.rotateLeft, -value);
+      }
+    }
+
+    value = this.axes.get('rsy');
+
+    if (value > StickEPS) {
+      this.#y0 = this.#py + value;
+      this.#py = this.#y0;
+    } else if (value < -StickEPS) {
+      this.#y0 = this.#py + value;
+      this.#py = this.#y0;
+    }
+
+    value = this.axes.get('rsx');
+
+    if (value > StickEPS) {
+      this.#x0 = this.#px + value;
+      this.#px = this.#x0;
+    } else if (value < -StickEPS) {
+      this.#x0 = this.#px + value;
+      this.#px = this.#x0;
+    }
+
+    value = this.axes.get('rt2');
+
+    if (value > 0) {
+      if (!this.#pendings.has(axis)) {
+        this.#pendings.add(axis);
+        this.#actions.set(Actions.trigger, value);
+      }
+    }
+
+    value = this.axes.get('lt2');
+    
+    if (value > 0) {
+      if (!this.#pendings.has(axis)) {
+        this.#pendings.add(axis);
+      }
+    }
 
     this.buttons.forEach((value, button) => {
-      const mashed = this.buttons.get('x');
-      urgency = mashed === 1;
-
       if (button === 'a' && value === 1) {
         if (!this.#pendings.has(button)) {
           this.#pendings.add(button);
           this.#actions.set(Actions.jump, value);
         }
       } else if (button === 'lb' && value === 1) {
-        if (mashed === 1) {
+        if (this.#mashed === 1) {this.#mashed = 0;
           this.#actions.set(Actions.quickMoveLeft, -1);
         } else {
           this.#actions.set(Actions.moveLeft, -1);
         }
       } else if (button === 'rb' && value === 1) {
-        if (mashed === 1) {
+        if (this.#mashed === 1) {this.#mashed = 0;
           this.#actions.set(Actions.quickMoveRight, 1);
         } else {
           this.#actions.set(Actions.moveRight, 1);
@@ -252,9 +358,7 @@ class GamepadControls extends Publisher {
         const delta = Rad1;
         this.#pitch -= delta;
       } else if (button === 'x' && value === 1) {
-        if (!this.#pendings.has(button)) {
-          this.#pendings.add(button);
-        }
+        //
       } else if (button === 'y' && value === 1) {
         if (!this.#pendings.has(button)) {
           this.#pendings.add(button);
@@ -263,72 +367,6 @@ class GamepadControls extends Publisher {
         if (!this.#pendings.has(button)) {
           this.#pendings.add(button);
           this.#povLock = true;
-        }
-      }
-    });
-
-    this.axes.forEach((value, axis) => {
-      const mashed = this.buttons.get('x');
-      urgency = mashed === 1;
-
-      if (axis === 'lsy') {
-        if (value < -StickEPS) {
-          if (mashed === 1) {
-            this.#actions.set(Actions.quickMoveForward, 1);
-          } else if (
-            this.buttons.get('lsb') === 1 ||
-            this.buttons.get('lt') === 1 ||
-            this.axes.get('lt2') > 0
-          ) {
-            this.#actions.set(Actions.sprint, -value);
-          } else {
-            this.#actions.set(Actions.moveForward, -value);
-          }
-        } else if (value > StickEPS) {
-          if (mashed === 1) {
-            this.#actions.set(Actions.quickMoveBackward, -1);
-          } else {
-            this.#actions.set(Actions.moveBackward, -value);
-          }
-        }
-      } else if (axis === 'lsx') {
-        if (value > StickEPS) {
-          if (mashed === 1) {
-            this.#actions.set(Actions.quickTurnRight, -1);
-          } else {
-            this.#actions.set(Actions.rotateRight, -value);
-          }
-        } else if (value < -StickEPS) {
-          if (mashed === 1) {
-            this.#actions.set(Actions.quickTurnLeft, 1);
-          } else {
-            this.#actions.set(Actions.rotateLeft, -value);
-          }
-        }
-      } else if (axis === 'rsy') {
-        if (value > StickEPS) {
-          this.#y0 = this.#py + value;
-          this.#py = this.#y0;
-        } else if (value < -StickEPS) {
-          this.#y0 = this.#py + value;
-          this.#py = this.#y0;
-        }
-      } else if (axis === 'rsx') {
-        if (value > StickEPS) {
-          this.#x0 = this.#px + value;
-          this.#px = this.#x0;
-        } else if (value < -StickEPS) {
-          this.#x0 = this.#px + value;
-          this.#px = this.#x0;
-        }
-      } else if (axis === 'rt2' && value > 0) {
-        if (!this.#pendings.has(axis)) {
-          this.#pendings.add(axis);
-          this.#actions.set(Actions.trigger, value);
-        }
-      } else if (axis === 'lt2' && value > 0) {
-        if (!this.#pendings.has(axis)) {
-          this.#pendings.add(axis);
         }
       }
     });

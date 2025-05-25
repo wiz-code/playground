@@ -1,4 +1,5 @@
 import {
+  CircleGeometry,//////////////
   CapsuleGeometry,
   ConeGeometry,
   EdgesGeometry,
@@ -17,7 +18,7 @@ import {
   Points,
   Group,
 } from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
 
 import { Game } from '../settings';
 import { World, Screen } from './settings';
@@ -29,6 +30,8 @@ const caches = {
   geometry: new Map(),
   material: new Map(),
 };
+
+const pointGap = 6;
 
 const offsetMesh = (mesh, offset) => {
   const { rotation, position } = offset;
@@ -102,7 +105,7 @@ export const createPolyhedron = (
 
     const pointsDetail = size.pointsDetail ?? 0;
     geometry.points = new OctahedronGeometry(size.radius + 1, pointsDetail);
-    const pointsVertices = geometry.points.attributes.position.array.slice(0);
+    const pointsVertices = geometry.points.getAttribute('position').array.slice();
 
     geometry.points = new BufferGeometry();
     geometry.points.setAttribute(
@@ -153,6 +156,7 @@ export const createSphere = (subtype, name, type, body, offset) => {
   const {
     wireframe = false,
     satellite = false,
+    satelliteCap = 'both',
     style,
     size,
     transform = {},
@@ -180,8 +184,20 @@ export const createSphere = (subtype, name, type, body, offset) => {
 
     if (satellite) {
       const pointsDetail = size.pointsDetail ?? 0;
-      geometry.points = new OctahedronGeometry(size.radius + 1, pointsDetail);
-      const pointsVertices = geometry.points.attributes.position.array.slice(0);
+      let geom;
+      const radius = size.radius + 1;
+
+      if (satelliteCap === 'both') {
+        geom = new OctahedronGeometry(radius, pointsDetail);
+      } else if (satelliteCap === 'end') {
+        geom = new ConeGeometry(radius, radius, 3);
+        geom.translate(0, radius * 0.5, 0);
+      } else {
+        geom = new CircleGeometry(radius, 3);
+        geom.rotateX(-PI * 0.5);
+      }
+
+      const pointsVertices = geom.getAttribute('position').array.slice();
 
       geometry.points = new BufferGeometry();
       geometry.points.setAttribute(
@@ -296,6 +312,7 @@ export const createCapsule = (subtype, name, type, body, offset) => {
   const {
     wireframe = false,
     satellite = false,
+    satelliteCap = 'both',
     style,
     size,
     transform = {},
@@ -320,38 +337,27 @@ export const createCapsule = (subtype, name, type, body, offset) => {
 
     if (satellite) {
       const radius = size.radius + World.pointSize * 0.5;
-      //const heightSegments = floor((size.height * 0.1) / size.radius) + 1;
-      const heightSegments = floor((size.height + size.radius * 2) / 6);
-      const geom = new CapsuleGeometry(radius, size.height, 1, 3, heightSegments);
-      const vertices = geom.attributes.position.array.slice(0);
+      const heightSegments = (size.height > pointGap ? floor(size.height / pointGap) : 0) + 1;
+      let geom;
+
+      if (satelliteCap == 'both') {
+        geom = new CapsuleGeometry(radius, size.height, 1, 3, heightSegments);
+      } else if (satelliteCap === 'end') {
+        const geom1 = new ConeGeometry(radius, radius, 3);
+        geom1.translate(0, (size.height + radius) * 0.5, 0);
+        const geom2 = new CylinderGeometry(radius, radius, size.height, 3, heightSegments);
+        geom = mergeGeometries([geom1, geom2]);
+        geom = mergeVertices(geom);
+      } else {
+        geom = new CylinderGeometry(radius, radius, size.height, 3, heightSegments);
+      }
+      const vertices = geom.getAttribute('position').array.slice();
 
       geometry.points = new BufferGeometry();
       geometry.points.setAttribute(
         'position',
         new Float32BufferAttribute(vertices, 3),
       );
-
-      /*const geomSize = size.radius + World.pointSize * 0.5;
-
-      const geom = new ConeGeometry(geomSize, geomSize, 3);
-      const vertices = geom.attributes.position.array.slice(0);
-
-      geometry.points = new BufferGeometry();
-      geometry.points.setAttribute(
-        'position',
-        new Float32BufferAttribute(vertices, 3),
-      );
-
-      const geom1 = new BufferGeometry();
-      geom1.setAttribute('position', new Float32BufferAttribute(vertices, 3));
-      const geom2 = geom1.clone();
-      const geomOffset = (size.height + geomSize) * 0.5;
-      geom1.translate(0, geomOffset, 0);
-      geom2.rotateX(PI);
-      geom2.translate(0, -geomOffset, 0);
-
-      geometry.points = mergeGeometries([geom1, geom2]);
-      geometry.points.center();*/
     }
 
     if (type === 'joint' || type === 'arm') {
@@ -377,7 +383,7 @@ export const createCapsule = (subtype, name, type, body, offset) => {
         }
       }
     }
-
+    
     if (transform != null) {
       const { position, rotation } = transform;
 

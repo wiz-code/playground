@@ -61,7 +61,7 @@ export const Characters = [
       },
 
       collidable: {
-        name: 'body',
+        name: 'body1',
         type: 'object',
         body: {
           shape: 'body',
@@ -108,7 +108,7 @@ export const Characters = [
       },
 
       collidable: {
-        name: 'body',
+        name: 'body2',
         type: 'object',
 
         body: {
@@ -141,7 +141,7 @@ export const Characters = [
                 y: (90 / 360) * PI * 2,
                 z: (0 / 360) * PI * 2,
               },
-              position: { x: 4, y: 2, z: 0 },
+              position: { x: 3, y: 2, z: 0 },
             },
             body: {
               shape: 'sphere',
@@ -155,6 +155,7 @@ export const Characters = [
               size: { radius: 1 },
               wireframe: true,
               satellite: true,
+              satelliteCap: 'none',
             },
             collider: {
               shape: 'sphere',
@@ -167,9 +168,9 @@ export const Characters = [
               {
                 name: 'left-upper-arm',
                 type: 'arm',
-                // skeletal: { name: 'left-upper-arm', options: { loop: true } },
+                //skeletal: { name: 'left-upper-arm', options: { loop: true } },
                 offset: {
-                  position: { x: 0, y: 0, z: 3 },
+                  position: { x: 0, y: 0, z: 2 },
                   rotation: {
                     x: (0 / 360) * PI * 2,
                     y: (0 / 360) * PI * 2,
@@ -187,12 +188,13 @@ export const Characters = [
                   },
                   wireframe: true,
                   satellite: true,
-                  size: { radius: 1, height: 10 },
+                  satelliteCap: 'none',
+                  size: { radius: 0.5, height: 4 },
                 },
                 collider: {
                   shape: 'capsule',
                   stats: { weight: 1 },
-                  size: { radius: 1, height: 10 },
+                  size: { radius: 0.5, height: 4 },
                 },
                 children: [
                   {
@@ -204,7 +206,7 @@ export const Characters = [
                         y: (0 / 360) * PI * 2,
                         z: (0 / 360) * PI * 2,
                       },
-                      position: { x: 0, y: 0, z: 3 },
+                      position: { x: 0, y: 0, z: 2 },
                     },
                     body: {
                       shape: 'sphere',
@@ -218,6 +220,7 @@ export const Characters = [
                       size: { radius: 1, widthSegments: 16, heightSegments: 8 },
                       wireframe: true,
                       satellite: true,
+                      satelliteCap: 'none',
                     },
                     collider: {
                       shape: 'sphere',
@@ -230,9 +233,9 @@ export const Characters = [
                       {
                         name: 'left-forearm',
                         type: 'arm',
-                        // skeletal: { name: 'left-forearm', options: { loop: true } },
+                        //skeletal: { name: 'left-forearm', options: { loop: true } },
                         offset: {
-                          position: { x: 0, y: 0, z: 3 },
+                          position: { x: 0, y: 0, z: 2 },
                           rotation: {
                             x: (0 / 360) * PI * 2,
                             y: (0 / 360) * PI * 2,
@@ -250,12 +253,13 @@ export const Characters = [
                           },
                           wireframe: true,
                           satellite: true,
-                          size: { radius: 1, height: 10 },
+                          satelliteCap: 'none',
+                          size: { radius: 0.5, height: 4 },
                         },
                         collider: {
                           shape: 'capsule',
                           stats: { weight: 1 },
-                          size: { radius: 1, height: 10 },
+                          size: { radius: 0.5, height: 4 },
                         },
                         children: [
                           {
@@ -263,7 +267,7 @@ export const Characters = [
                             type: 'joint',
                             offset: {
                               rotation: { y: 0 },
-                              position: { x: 0, y: 0, z: 3 },
+                              position: { x: 0, y: 0, z: 2 },
                             },
                             body: {
                               shape: 'sphere',
@@ -281,6 +285,7 @@ export const Characters = [
                               },
                               wireframe: true,
                               satellite: true,
+                              satelliteCap: 'end',
                             },
                             collider: {
                               shape: 'sphere',
