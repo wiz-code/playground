@@ -1,7 +1,7 @@
 import { Vector3, Euler, Spherical, Quaternion, BufferGeometry, Mesh } from 'three';
 
 import { createArrow } from './create-object';
-import { Actions, States, InputKeys, MashKeys, Pointers } from './constants';
+import { Actions, States, InputKeys, MashKeys, Pointers, UrgentActions } from './constants';
 import { Characters } from './data/entities';
 import Character from './character';
 import Collidable from './collidable';
@@ -11,6 +11,8 @@ import { getGridPos, getVectorPos } from './utils';
 
 const { floor, sign, random, min, max, PI } = Math;
 const { EPS, RAD30, HalfPI } = Game;
+
+const urgentActions = new Set(UrgentActions);
 
 const easeOutQuad = (x) => 1 - (1 - x) * (1 - x);
 const easeInQuad = (x) => x * x;
@@ -107,6 +109,10 @@ class Player extends Character {
   }
 
   setUrgency() {
+    if (this.hasState(States.urgency)) {
+      return;
+    }
+
     this.addState(States.urgency);
 
     if (
@@ -206,7 +212,7 @@ class Player extends Character {
     );
   }
 
-  input(actions, urgency) {
+  input(actions) {
     // 緊急行動中は入力を受け付けない
     if (this.hasState(States.urgency)) {
       return;
@@ -217,71 +223,23 @@ class Player extends Character {
 
     // スタン中の緊急回避の先行入力は記録しておく
     if (this.isStunning()) {
-      if (urgency) {
-        actions.forEach((value, key) => this.#precededActions.set(key, value));
-      }
+      actions.forEach((value, key) => {
+        if (urgentActions.has(key)) {
+          this.#precededActions.set(key, value);
+        }
+      });
       return;
     }
 
     // コントロールから渡されたアクションデータをコピー
-    actions.forEach((value, key) => this.#actions.set(key, value));
+    actions.forEach((value, key) => {
+      this.#actions.set(key, value);
 
-    // 緊急行動の初回の処理
-    if (urgency) {
-      this.setUrgency();
-      /*this.addState(States.urgency);
-
-      if (
-        actions.has(Actions.quickTurnLeft) ||
-        actions.has(Actions.quickTurnRight)
-      ) {
-        this.#urgencyDuration = World.urgencyTurnDuration;
-      } else {
-        this.#urgencyDuration = World.urgencyDuration;
+      if (urgentActions.has(key)) {
+        this.setUrgency();
       }
-
-      if (this.hasControls) {
-        const method = this.game.methods.get('play-sound');
-        method?.('dash');
-      }*/
-    }
+    });
   }
-
-  /*input(actions, urgency) {
-    // スタン中は緊急回避行動以外の入力を受け付けない
-    if (this.hasState(States.stunning)) {
-      this.#actions.clear();
-
-      // 先行入力を記録しておく
-      actions.forEach((value, key) => this.#precededActions.set(key, value));
-      return;
-    }
-
-    // 緊急行動中も初回以降は入力を受け付けない
-    if (!this.hasState(States.urgency)) {
-      // 前回のアクションを消去
-      this.#actions.clear();
-      actions.forEach((value, key) => this.#actions.set(key, value));
-
-      if (urgency) {
-        this.addState(States.urgency);
-
-        if (
-          actions.has(Actions.quickTurnLeft) ||
-          actions.has(Actions.quickTurnRight)
-        ) {
-          this.#urgencyDuration = World.urgencyTurnDuration;
-        } else {
-          this.#urgencyDuration = World.urgencyDuration;
-        }
-
-        if (this.hasControls) {
-          const method = this.game.methods.get('play-sound');
-          method?.('dash');
-        }
-      }
-    }
-  }*/
 
   steer(deltaTime) {
     if (this.#precededActions.size > 0 && !this.isStunning()) {

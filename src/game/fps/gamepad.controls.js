@@ -198,11 +198,6 @@ class GamepadControls extends Publisher {
         }
       }
     }
-    /*for (let i = 0, l = buttons.length; i < l; i += 1) {
-      const button = buttonList[i];
-      const value = buttons[i];
-      this.buttons.set(button, value);
-    }*/
 
     for (let i = 0, l = axes.length; i < l; i += 1) {
       const axis = axisList[i];
@@ -216,31 +211,6 @@ class GamepadControls extends Publisher {
       }
     }
 
-    /*nonRepeatableButtonList.forEach((button) => {
-      const index = buttonMap.get(button);
-      const value = buttons[index];
-
-      if (this.#pendings.has(button) && value === 0) {
-        this.#pendings.delete(button);
-
-        if (button === 'rsb') {
-          this.#povLock = false;
-          this.#resetPointer = true;
-        } else if (button === 'y') {
-          this.#resetWheel = true;
-        }
-      }
-    });*/
-
-    /*nonRepeatableAxisList.forEach((axis) => {
-      const index = axisMap.get(axis);
-      const value = axes[index];
-
-      if (value < -1 + StickEPS) {
-        this.#pendings.delete(axis);
-      }
-    });*/
-
     this.#actions.clear();
     const mashed = this.buttons.get('x');
 
@@ -250,8 +220,6 @@ class GamepadControls extends Publisher {
         this.#mashed = 1;
       }
     }
-
-    const urgency = this.#mashed === 1;
 
     let value = this.axes.get('lsy');
 
@@ -371,7 +339,7 @@ class GamepadControls extends Publisher {
       }
     });
 
-    this.publish('input', this.#actions, urgency);
+    this.publish('input', this.#actions);
   }
 
   update(deltaTime) {

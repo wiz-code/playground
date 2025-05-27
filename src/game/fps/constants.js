@@ -88,6 +88,15 @@ export const PlayState = {
   paused: 2,
 };
 
+export const UrgentActions = [
+  Actions.quickMoveForward,
+  Actions.quickMoveBackward,
+  Actions.quickTurnLeft,
+  Actions.quickTurnRight,
+  Actions.quickMoveLeft,
+  Actions.quickMoveRight,
+];
+
 export const CommonEvents = [
   { name: 'fall-down', type: 'immediate', handler: 'fall-down' },
   { name: 'oob', type: 'immediate', handler: 'oob' },

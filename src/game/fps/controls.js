@@ -254,86 +254,115 @@ class FirstPersonControls extends Publisher {
 
   input() {
     this.#actions.clear();
-    let urgency = false;
-    let urgencyKey = -1;
 
-    if (this.#keys.has(InputKeys.KeyC)) {
-      for (const mashKey of mashKeys.keys()) {
-        if (this.#keys.has(mashKey)) {
-          urgency = true;
-          urgencyKey = mashKey;
-          this.#keys.delete(mashKey);
-          this.#keys.delete(InputKeys.KeyC);
-          break;
-        }
-      }
+    if (this.#keys.has(InputKeys.Space)) {
+      this.#actions.set(Actions.jump, 1);
     }
 
-    if (urgency) {
-      if (urgencyKey === InputKeys.KeyW || urgencyKey === InputKeys.ArrowUp) {
+    if (this.#keys.has(InputKeys.KeyW) || this.#keys.has(InputKeys.ArrowUp)) {
+      if (this.#keys.has(InputKeys.Shift)) {
+        this.#actions.set(Actions.sprint, 1);
+      } else if (this.#keys.has(InputKeys.KeyC)) {
         this.#actions.set(Actions.quickMoveForward, 1);
-      } else if (
-        urgencyKey === InputKeys.KeyS ||
-        urgencyKey === InputKeys.ArrowDown
-      ) {
-        this.#actions.set(Actions.quickMoveBackward, -1);
-      } else if (
-        urgencyKey === InputKeys.KeyA ||
-        urgencyKey === InputKeys.ArrowLeft
-      ) {
-        this.#actions.set(Actions.quickTurnLeft, 1);
-      } else if (
-        urgencyKey === InputKeys.KeyD ||
-        urgencyKey === InputKeys.ArrowRight
-      ) {
-        this.#actions.set(Actions.quickTurnRight, -1);
-      } else if (urgencyKey === InputKeys.KeyQ) {
-        this.#actions.set(Actions.quickMoveLeft, -1);
-      } else if (urgencyKey === InputKeys.KeyE) {
-        this.#actions.set(Actions.quickMoveRight, 1);
-      }
-    } else {
-      if (this.#keys.has(InputKeys.Space)) {
-        this.#actions.set(Actions.jump, 1);
-      }
+        this.#keys.delete(InputKeys.KeyC);
 
-      if (this.#keys.has(InputKeys.KeyW) || this.#keys.has(InputKeys.ArrowUp)) {
-        if (this.#keys.has(InputKeys.Shift)) {
-          this.#actions.set(Actions.sprint, 1);
-        } else {
-          this.#actions.set(Actions.moveForward, 1);
+        if (this.#keys.has(InputKeys.KeyW)) {
+          this.#keys.delete(InputKeys.KeyW)
         }
-      } else if (
-        this.#keys.has(InputKeys.KeyS) ||
-        this.#keys.has(InputKeys.ArrowDown)
-      ) {
+
+        if (this.#keys.has(InputKeys.ArrowUp)) {
+          this.#keys.delete(InputKeys.ArrowUp)
+        }
+      } else {
+        this.#actions.set(Actions.moveForward, 1);
+      }
+    } else if (
+      this.#keys.has(InputKeys.KeyS) ||
+      this.#keys.has(InputKeys.ArrowDown)
+    ) {
+      if (this.#keys.has(InputKeys.KeyC)) {
+        this.#actions.set(Actions.quickMoveBackward, -1);
+        this.#keys.delete(InputKeys.KeyC);
+
+        if (this.#keys.has(InputKeys.KeyS)) {
+          this.#keys.delete(InputKeys.KeyS)
+        }
+
+        if (this.#keys.has(InputKeys.ArrowDown)) {
+          this.#keys.delete(InputKeys.ArrowDown)
+        }
+      } else {
         this.#actions.set(Actions.moveBackward, -1);
       }
+    }
 
-      if (
-        this.#keys.has(InputKeys.KeyA) ||
-        this.#keys.has(InputKeys.ArrowLeft)
-      ) {
+    if (
+      this.#keys.has(InputKeys.KeyA) ||
+      this.#keys.has(InputKeys.ArrowLeft)
+    ) {
+      if (this.#keys.has(InputKeys.KeyC)) {
+        this.#actions.set(Actions.quickTurnLeft, 1);
+        this.#keys.delete(InputKeys.KeyC);
+
+        if (this.#keys.has(InputKeys.KeyA)) {
+          this.#keys.delete(InputKeys.KeyA)
+        }
+
+        if (this.#keys.has(InputKeys.ArrowLeft)) {
+          this.#keys.delete(InputKeys.ArrowLeft)
+        }
+      } else {
         this.#actions.set(Actions.rotateLeft, 1);
-      } else if (
-        this.#keys.has(InputKeys.KeyD) ||
-        this.#keys.has(InputKeys.ArrowRight)
-      ) {
+      }
+    } else if (
+      this.#keys.has(InputKeys.KeyD) ||
+      this.#keys.has(InputKeys.ArrowRight)
+    ) {
+      if (this.#keys.has(InputKeys.KeyC)) {
+        this.#actions.set(Actions.quickTurnRight, -1);
+        this.#keys.delete(InputKeys.KeyC);
+
+        if (this.#keys.has(InputKeys.KeyD)) {
+          this.#keys.delete(InputKeys.KeyD)
+        }
+
+        if (this.#keys.has(InputKeys.ArrowRight)) {
+          this.#keys.delete(InputKeys.ArrowRight)
+        }
+      } else {
         this.#actions.set(Actions.rotateRight, -1);
-      }
-
-      if (this.#keys.has(InputKeys.KeyQ)) {
-        this.#actions.set(Actions.moveLeft, -1);
-      } else if (this.#keys.has(InputKeys.KeyE)) {
-        this.#actions.set(Actions.moveRight, 1);
-      }
-
-      if (this.#pointers.has(Pointers.left)) {
-        this.#actions.set(Actions.trigger, 1);
       }
     }
 
-    this.publish('input', this.#actions, urgency);
+    if (this.#keys.has(InputKeys.KeyQ)) {
+      if (this.#keys.has(InputKeys.KeyC)) {
+        this.#actions.set(Actions.quickMoveLeft, -1);
+        this.#keys.delete(InputKeys.KeyC);
+
+        if (this.#keys.has(InputKeys.KeyQ)) {
+          this.#keys.delete(InputKeys.KeyQ)
+        }
+      } else {
+        this.#actions.set(Actions.moveLeft, -1);
+      }
+    } else if (this.#keys.has(InputKeys.KeyE)) {
+      if (this.#keys.has(InputKeys.KeyC)) {
+        this.#actions.set(Actions.quickMoveRight, 1);
+        this.#keys.delete(InputKeys.KeyC);
+
+        if (this.#keys.has(InputKeys.KeyE)) {
+          this.#keys.delete(InputKeys.KeyE)
+        }
+      } else {
+        this.#actions.set(Actions.moveRight, 1);
+      }
+    }
+
+    if (this.#pointers.has(Pointers.left)) {
+      this.#actions.set(Actions.trigger, 1);
+    }
+
+    this.publish('input', this.#actions);
 
     nonRepeatableKeyList.forEach((key) => this.#keys.delete(InputKeys[key]));
     nonRepeatablePointerList.forEach((pointer) =>
