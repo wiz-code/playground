@@ -7,7 +7,9 @@ import {
   Color,
   AmbientLight,
   Texture,
+  SRGBColorSpace,
 } from 'three';
+//import { WebGPURenderer } from 'three/webgpu';
 
 import { Game as GameSettings } from '../settings';
 import { Scene, Camera, World, Light } from './settings';
@@ -69,6 +71,7 @@ class WorkerMain {
 
     imageBitmap.forEach((value, key, map) => {
       const texture = new Texture(value);
+      texture.colorSpace = SRGBColorSpace;
       texture.needsUpdate = true;
       map.set(key, texture);
     });

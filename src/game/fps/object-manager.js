@@ -106,7 +106,7 @@ class ObjectManager extends Publisher {
         collidable.show();
       }
 
-      this.scene.remove(collidable.body);
+      collidable.detach(this.scene);
       this.list.delete(object);
     }
   }

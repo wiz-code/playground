@@ -125,11 +125,11 @@ class Collidable {
       this.body = new Object3D();
       this.body.name = name;
     }
-/*console.log(1, this.body)
-  this.body.traverse((child) => {
-    if (child.geometry == null) return;
-    console.log(child.name, child.geometry.getAttribute('position').array);
-  })*/
+
+    if (parent != null && parent.type === 'arm') {
+      const { height } = parent.body.geometry.parameters;
+      this.body.position.z += height;
+    }
 
     this.satellite = null;
     const satellite = this.body.getObjectByName('points');
@@ -188,14 +188,21 @@ class Collidable {
       const { parent, body } = col;
 
       if (parent != null) {
-        if (parent.type === 'arm') {
-          const { height } = parent.body.geometry.parameters;
-          body.translateZ(height);
-        }
-
         parent.body.add(body);
       } else {
         scene.add(body);
+      }
+    });
+  }
+
+  detach(scene) {
+    this.traverse((col) => {
+      const { parent, body } = col;
+
+      if (parent != null) {
+        parent.body.remove(body);
+      } else {
+        scene.remove(body);
       }
     });
   }

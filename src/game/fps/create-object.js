@@ -31,6 +31,16 @@ const caches = {
   material: new Map(),
 };
 
+const pointSpriteMap = new Map([
+  ['normal', 'point'],
+  ['small', 'pointThin'],
+]);
+
+const pointSizeMap = new Map([
+  ['normal', 1],
+  ['small', 0.5],
+]);
+
 const pointGap = 6;
 
 const offsetMesh = (mesh, offset) => {
@@ -62,7 +72,7 @@ const offsetMesh = (mesh, offset) => {
 export const createPolyhedron = (
   subtype,
   name,
-  { type, style, size, transform = {} },
+  { type, style, size, transform = {}, wireframe = false, satellite = false },
   offset,
 ) => {
   let geometry = {};
@@ -101,17 +111,22 @@ export const createPolyhedron = (
     geometry = caches.geometry.get(key);
   } else {
     geometry.body = new Geometry(size.radius, size.detail);
-    geometry.wire = new EdgesGeometry(geometry.body);
 
-    const pointsDetail = size.pointsDetail ?? 0;
-    geometry.points = new OctahedronGeometry(size.radius + 1, pointsDetail);
-    const pointsVertices = geometry.points.getAttribute('position').array.slice();
+    if (wireframe) {
+      geometry.wire = new EdgesGeometry(geometry.body);
+    }
 
-    geometry.points = new BufferGeometry();
-    geometry.points.setAttribute(
-      'position',
-      new Float32BufferAttribute(pointsVertices, 3),
-    );
+    if (satellite) {
+      const pointDetail = size.pointDetail ?? 0;
+      geometry.points = new OctahedronGeometry(size.radius + 1, pointDetail);
+      const pointsVertices = geometry.points.getAttribute('position').array.slice();
+
+      geometry.points = new BufferGeometry();
+      geometry.points.setAttribute(
+        'position',
+        new Float32BufferAttribute(pointsVertices, 3),
+      );
+    }
 
     caches.geometry.set(key, geometry);
   }
@@ -122,30 +137,39 @@ export const createPolyhedron = (
     material.body = new MeshBasicMaterial({
       color: style.color,
     });
-    material.wire = new LineBasicMaterial({
-      color: style.wireColor,
-    });
 
-    material.points = new PointsMaterial({
-      color: style.pointColor,
-      size: World.pointSize,
-      map: self.texture.get('point'),
-      blending: NormalBlending,
-      alphaTest: 0.5,
-    });
+    if (wireframe) {
+      material.wire = new LineBasicMaterial({
+        color: style.wireColor,
+      });
+    }
+
+    if (satellite) {
+      material.points = new PointsMaterial({
+        color: style.pointColor,
+        size: World.pointSize,
+        map: self.texture.get('point'),
+        blending: NormalBlending,
+        alphaTest: 0.5,
+      });
+    }
 
     caches.material.set(key, material);
   }
 
   mesh.body = new Mesh(geometry.body, material.body);
-  mesh.wire = new LineSegments(geometry.wire, material.wire);
-  mesh.points = new Points(geometry.points, material.points);
-
   mesh.body.name = name;
-  mesh.points.name = 'points';
 
-  mesh.body.add(mesh.wire);
-  mesh.body.add(mesh.points);
+  if (wireframe) {
+    mesh.wire = new LineSegments(geometry.wire, material.wire);
+    mesh.body.add(mesh.wire);
+  }
+
+  if (satellite) {
+    mesh.points = new Points(geometry.points, material.points);
+    mesh.points.name = 'points';
+    mesh.body.add(mesh.points);
+  }
 
   offsetMesh(mesh.body, offset);
 
@@ -157,6 +181,7 @@ export const createSphere = (subtype, name, type, body, offset) => {
     wireframe = false,
     satellite = false,
     satelliteCap = 'both',
+    pointSize = 'normal',
     style,
     size,
     transform = {},
@@ -183,12 +208,13 @@ export const createSphere = (subtype, name, type, body, offset) => {
     }
 
     if (satellite) {
-      const pointsDetail = size.pointsDetail ?? 0;
       let geom;
-      const radius = size.radius + 1;
+      const pointDetail = size.pointDetail ?? 0;
+      const additional = pointSizeMap.get(pointSize);
+      const radius = size.radius + additional;
 
       if (satelliteCap === 'both') {
-        geom = new OctahedronGeometry(radius, pointsDetail);
+        geom = new OctahedronGeometry(radius, pointDetail);
       } else if (satelliteCap === 'end') {
         geom = new ConeGeometry(radius, radius, 3);
         geom.translate(0, radius * 0.5, 0);
@@ -277,10 +303,12 @@ export const createSphere = (subtype, name, type, body, offset) => {
     }
 
     if (satellite) {
+      const pSprite = pointSpriteMap.get(pointSize);
+      const pSize = pointSizeMap.get(pointSize) * World.pointSize;
       material.points = new PointsMaterial({
         color: style.pointColor,
-        size: World.pointSize,
-        map: self.texture.get('point'),
+        size: pSize,
+        map: self.texture.get(pSprite),
         blending: NormalBlending,
         alphaTest: 0.5,
       });
@@ -313,6 +341,7 @@ export const createCapsule = (subtype, name, type, body, offset) => {
     wireframe = false,
     satellite = false,
     satelliteCap = 'both',
+    pointSize = 'normal',
     style,
     size,
     transform = {},
@@ -336,7 +365,8 @@ export const createCapsule = (subtype, name, type, body, offset) => {
     }
 
     if (satellite) {
-      const radius = size.radius + World.pointSize * 0.5;
+      const additional = pointSizeMap.get(pointSize);
+      const radius = size.radius + additional;
       const heightSegments = (size.height > pointGap ? floor(size.height / pointGap) : 0) + 1;
       let geom;
 
@@ -345,11 +375,11 @@ export const createCapsule = (subtype, name, type, body, offset) => {
       } else if (satelliteCap === 'end') {
         const geom1 = new ConeGeometry(radius, radius, 3);
         geom1.translate(0, (size.height + radius) * 0.5, 0);
-        const geom2 = new CylinderGeometry(radius, radius, size.height, 3, heightSegments);
+        const geom2 = new CylinderGeometry(radius, radius, size.height, 3, heightSegments, true);
         geom = mergeGeometries([geom1, geom2]);
         geom = mergeVertices(geom);
       } else {
-        geom = new CylinderGeometry(radius, radius, size.height, 3, heightSegments);
+        geom = new CylinderGeometry(radius, radius, size.height, 3, heightSegments, true);
       }
       const vertices = geom.getAttribute('position').array.slice();
 
@@ -443,10 +473,12 @@ export const createCapsule = (subtype, name, type, body, offset) => {
     }
 
     if (satellite) {
+      const pSprite = pointSpriteMap.get(pointSize);
+      const pSize = pointSizeMap.get(pointSize) * World.pointSize;
       material.points = new PointsMaterial({
         color: style.pointColor,
-        size: World.pointSize,
-        map: self.texture.get('point'),
+        size: pSize,
+        map: self.texture.get(pSprite),
         blending: NormalBlending,
         alphaTest: 0.5,
       });

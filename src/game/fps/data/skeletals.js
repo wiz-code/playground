@@ -58,7 +58,7 @@ export const Posings = new Map([
             transform: {
               rotation: {
                 x: (0 / 360) * PI * 2,
-                y: (-45 / 360) * PI * 2,
+                y: (105 / 360) * PI * 2,
                 z: (0 / 360) * PI * 2,
               },
             },
@@ -157,8 +157,8 @@ export const Posings = new Map([
             key: '.quaternion',
             transform: {
               rotation: {
-                x: (0 / 360) * PI * 2,
-                y: (-45 / 360) * PI * 2,
+                x: (105 / 360) * PI * 2,
+                y: (0 / 360) * PI * 2,
                 z: (0 / 360) * PI * 2,
               },
             },

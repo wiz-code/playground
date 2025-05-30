@@ -137,11 +137,11 @@ export const Characters = [
             type: 'joint',
             offset: {
               rotation: {
-                x: (0 / 360) * PI * 2,
-                y: (90 / 360) * PI * 2,
+                x: (90 / 360) * PI * 2,
+                y: (30 / 360) * PI * 2,
                 z: (0 / 360) * PI * 2,
               },
-              position: { x: 3, y: 2, z: 0 },
+              position: { x: 2, y: 2, z: 0 },
             },
             body: {
               shape: 'sphere',
@@ -152,15 +152,16 @@ export const Characters = [
                 wireColor: 0x004d66,
                 pointColor: 0xeb4b2f,
               },
-              size: { radius: 1 },
+              size: { radius: 0.7 },
               wireframe: true,
               satellite: true,
               satelliteCap: 'none',
+              pointSize: 'small',
             },
             collider: {
               shape: 'sphere',
               stats: { weight: 1 },
-              size: { radius: 1 },
+              size: { radius: 0.7 },
               // enabled: false,
             },
             skeletal: { name: 'left-shoulder', options: { loop: true } },
@@ -170,7 +171,7 @@ export const Characters = [
                 type: 'arm',
                 //skeletal: { name: 'left-upper-arm', options: { loop: true } },
                 offset: {
-                  position: { x: 0, y: 0, z: 2 },
+                  position: { x: 0, y: 0, z: 1.1 },
                   rotation: {
                     x: (0 / 360) * PI * 2,
                     y: (0 / 360) * PI * 2,
@@ -189,12 +190,13 @@ export const Characters = [
                   wireframe: true,
                   satellite: true,
                   satelliteCap: 'none',
-                  size: { radius: 0.5, height: 4 },
+                  pointSize: 'small',
+                  size: { radius: 0.4, height: 3 },
                 },
                 collider: {
                   shape: 'capsule',
                   stats: { weight: 1 },
-                  size: { radius: 0.5, height: 4 },
+                  size: { radius: 0.4, height: 3 },
                 },
                 children: [
                   {
@@ -202,11 +204,11 @@ export const Characters = [
                     type: 'joint',
                     offset: {
                       rotation: {
-                        x: (0 / 360) * PI * 2,
+                        x: (-135 / 360) * PI * 2,
                         y: (0 / 360) * PI * 2,
                         z: (0 / 360) * PI * 2,
                       },
-                      position: { x: 0, y: 0, z: 2 },
+                      position: { x: 0, y: 0, z: 1.1 },
                     },
                     body: {
                       shape: 'sphere',
@@ -217,15 +219,16 @@ export const Characters = [
                         wireColor: 0x004d66,
                         pointColor: 0xeb4b2f,
                       },
-                      size: { radius: 1, widthSegments: 16, heightSegments: 8 },
+                      size: { radius: 0.7, widthSegments: 16, heightSegments: 8 },
                       wireframe: true,
                       satellite: true,
                       satelliteCap: 'none',
+                      pointSize: 'small',
                     },
                     collider: {
                       shape: 'sphere',
                       stats: { weight: 1 },
-                      size: { radius: 1 },
+                      size: { radius: 0.7 },
                       // enabled: false,
                     },
                     skeletal: { name: 'left-elbow', options: { loop: true } },
@@ -235,7 +238,7 @@ export const Characters = [
                         type: 'arm',
                         //skeletal: { name: 'left-forearm', options: { loop: true } },
                         offset: {
-                          position: { x: 0, y: 0, z: 2 },
+                          position: { x: 0, y: 0, z: 1.1 },
                           rotation: {
                             x: (0 / 360) * PI * 2,
                             y: (0 / 360) * PI * 2,
@@ -254,12 +257,13 @@ export const Characters = [
                           wireframe: true,
                           satellite: true,
                           satelliteCap: 'none',
-                          size: { radius: 0.5, height: 4 },
+                          pointSize: 'small',
+                          size: { radius: 0.4, height: 3 },
                         },
                         collider: {
                           shape: 'capsule',
                           stats: { weight: 1 },
-                          size: { radius: 0.5, height: 4 },
+                          size: { radius: 0.4, height: 3 },
                         },
                         children: [
                           {
@@ -267,7 +271,7 @@ export const Characters = [
                             type: 'joint',
                             offset: {
                               rotation: { y: 0 },
-                              position: { x: 0, y: 0, z: 2 },
+                              position: { x: 0, y: 0, z: 1.4 },
                             },
                             body: {
                               shape: 'sphere',
@@ -330,7 +334,7 @@ export const Characters = [
 
       collidable: {
         name: 'core',
-        type: 'skeletal', /// //
+        type: 'object',
         body: {
           shape: 'body',
           style: {
@@ -352,7 +356,7 @@ export const Characters = [
         children: [
           {
             name: 'left-shoulder',
-            type: 'skeletal',
+            type: 'joint',
             offset: {
               rotation: { x: (0 / 360) * PI * 2 },
               position: { x: 6, y: 2, z: 0 },
@@ -380,7 +384,7 @@ export const Characters = [
             children: [
               {
                 name: 'left-elbow',
-                type: 'skeletal',
+                type: 'joint',
                 offset: {
                   rotation: { y: 0 },
                   position: { x: 0, y: -2, z: 6 },
@@ -462,7 +466,37 @@ export const Obstacles = [
             wireColor: 0x4c625b,
             pointColor: 0xf4e511,
           },
+          wireframe: true,
+          satellite: true,
           size: { radius: 6, detail: 1 },
+        },
+        collider: {
+          shape: 'sphere',
+          stats: { weight: 120 },
+          size: { radius: 6 },
+        },
+      },
+    },
+  ],
+  [
+    'instanced-round-stone',
+    {
+      stats: {
+        satelliteSpeed: 1,
+      },
+      collidable: {
+        type: 'object',
+        body: {
+          shape: 'polyhedron',
+          type: 'icosahedron',
+          style: {
+            color: 0x203b33,
+            wireColor: 0x4c625b,
+            pointColor: 0xf4e511,
+          },
+          size: { radius: 6, detail: 1 },
+          wireframe: true,
+          satellite: true,
         },
         collider: {
           shape: 'sphere',
