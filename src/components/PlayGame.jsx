@@ -254,7 +254,7 @@ function PlayGame() {
       return;
     }
 
-    game.setParam('framerateCoef', framerateCoef);
+    game.setParam('framerateCoef', framerateCoef, true);///////////
   }, [framerateCoef]);
 console.log('PlayGame:rendererd')
   return (

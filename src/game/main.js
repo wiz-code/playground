@@ -8,7 +8,6 @@ import Publisher from './publisher';
 import DomEvents from './dom-events';
 import AudioManager from './audio-manager';
 import TextureManager from './texture-manager';
-import Loop from './loop';
 //import Loop from './async-loop';
 
 const { floor } = Math;
@@ -119,9 +118,8 @@ class Game extends Publisher {
       sab: this.#sab,
     };
 
-    this.update = this.update.bind(this);
-    this.loop = new Loop(this.update, this);
-    /*this.loop = new Loop(
+    /*this.update = this.update.bind(this);
+    this.loop = new Loop(
       this.update,
       crossOriginIsolated && canUseWaitAsync,
       this.#sab != null ? this.#sab.waitMain : null,
@@ -303,13 +301,18 @@ class Game extends Publisher {
           break;
         }
 
-        case 'worker-updated': {
+        case 'update': {
+          this.update();
+          break;
+        }
+
+        /*case 'worker-updated': {
           if (this.#workerUpdated != null) {
             this.#workerUpdated();
             this.#workerUpdated = null;
           }
           break;
-        }
+        }*/
 
         default: {
         }
@@ -321,6 +324,12 @@ class Game extends Publisher {
 
     window.addEventListener('resize', this.onResize);
     this.worker.addEventListener('message', this.onMessage);
+
+    const { crossOriginIsolated, canUseWaitAsync } = this.params;//////////
+
+    if (crossOriginIsolated && canUseWaitAsync) {////////////
+      this.awaitMain();
+    }
   }
 
   onEventDispatched(event, ...values) {
@@ -394,30 +403,30 @@ class Game extends Publisher {
   }
 
   start(active = false) {
-    if (!this.loop.isActive()) {
-      this.loop.start();
+    //if (!this.loop.isActive()) {
+      //this.loop.start();
 
       if (active) {
         this.worker.postMessage({ type: 'start' });
       }
-    }
+    //}
   }
 
   pause() {
-    if (this.loop.isActive()) {
-      this.loop.stop();
+    //if (this.loop.isActive()) {
+      //this.loop.stop();
       this.worker.postMessage({ type: 'pause' });
-    }
+    //}
   }
 
   stop(active = false) {
-    if (this.loop.isActive()) {
-      this.loop.stop();
+    //if (this.loop.isActive()) {
+      //this.loop.stop();
 
       if (active) {
         this.worker.postMessage({ type: 'stop' });
       }
-    }
+    //}
   }
 
   dispose() {
@@ -449,12 +458,26 @@ class Game extends Publisher {
     this.worker.postMessage({ type: 'send-param', value: [name, value] });
   }
 
-  updateMain() {
+  async awaitMain() {
+    const wait = Atomics.waitAsync(this.#sab.waitMain, 0, 0);
+    await wait.value;
+
+    /*this.controls.handleEvents(this.sab.pointerValues, this.sab.keyValues);
+    this.sab.pointerValues.fill(0);
+    this.sab.keyValues.fill(0);
+    this.controls.input();*/
+
+    this.update();
+  }
+
+  update() {
+    this.#frameCount += 1;
+
     if (this.#statsEnabled) {
       this.stats.update();
     }
 
-    const { crossOriginIsolated, canUseWaitAsync } = this.params;
+    const { framerateCoef, crossOriginIsolated, canUseWaitAsync } = this.params;
 
     if (
       crossOriginIsolated &&
@@ -483,7 +506,7 @@ class Game extends Publisher {
         this.#sab.buttons.set(buttons);
         this.#sab.axes.set(axes);
 
-        this.worker.postMessage({ type: 'update' });
+        /////this.worker.postMessage({ type: 'update' });
       }
     } else if (!crossOriginIsolated) {
       this.worker.postMessage(
@@ -494,26 +517,33 @@ class Game extends Publisher {
       this.keyValues = new Float32Array(KeyEventSize);
     }/* else if (canUseWaitAsync) {
       Atomics.notify(this.#sab.waitWorker, 0);
-    }*/ else {
+    } else {
       this.worker.postMessage({ type: 'update' });
+    }*/
+
+    if (!(crossOriginIsolated && canUseWaitAsync)) {///////////////
+      this.worker.postMessage({ type: 'main-updated' });
+    } else {
+      this.awaitMain();
+      Atomics.notify(this.#sab.waitWorker, 0);
     }
   }
 
-  async update() {
+  /*update() {
     this.#frameCount += 1;
 
     const { framerateCoef, crossOriginIsolated, canUseWaitAsync } = this.params;
 
     if (crossOriginIsolated && canUseWaitAsync) {
-      /*if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
+      if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
         return Atomics.notify(this.#sab.waitMain, 0);
-      }*/
+      }
 
       this.updateMain();
     } else {
-      /*if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
+      if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
         return Promise.resolve();
-      }*/
+      }
 
       const { promise, resolve } = Promise.withResolvers();
       this.#workerUpdated = resolve;
@@ -521,7 +551,7 @@ class Game extends Publisher {
 
       return promise;
     }
-  }
+  }*/
 }
 
 export default Game;

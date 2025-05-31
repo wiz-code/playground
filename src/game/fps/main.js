@@ -31,6 +31,7 @@ import EventManager from './event-manager';
 import MovableManager from './movable-manager';
 import GridProcessor from './grid-processor';
 import Movable from './movable';
+import Loop from '../async-loop';/////////////
 
 import { offsetPosition, disposeObject } from './utils';
 
@@ -63,6 +64,8 @@ class WorkerMain {
   #elapsedTime = 0;
 
   #frameCount = 0;
+
+  #mainUpdated = null;
 
   constructor(data, params) {
     const { canvas, width, height, sab, imageBitmap } = data;
@@ -184,12 +187,16 @@ class WorkerMain {
 
     this.init();
 
-    if (this.params.crossOriginIsolated && this.params.canUseWaitAsync) {
-      this.awaitWorker();
-    }
+    this.update = this.update.bind(this);//////////////
+    this.loop = new Loop(//////////////////////
+      this.update,
+      this.params.crossOriginIsolated && this.params.canUseWaitAsync,
+      this.sab != null ? this.sab.waitWorker : null,
+    );
 
-    this.update = this.update.bind(this);
-    this.loop = this.loop.bind(this);
+    /*if (this.params.crossOriginIsolated && this.params.canUseWaitAsync) {
+      this.awaitWorker();
+    }*/
   }
 
   async init() {
@@ -365,34 +372,31 @@ class WorkerMain {
         break;
       }
 
+      case 'main-updated': {
+        if (this.#mainUpdated != null) {
+          this.#mainUpdated();
+          this.#mainUpdated = null;
+        }
+        break;
+      }
+
       case 'update': {
         const { value } = event.data;
 
-        if (this.#gamepadIndex !== -1) {
-          if (!this.params.crossOriginIsolated) {
+        if (!this.params.crossOriginIsolated) {
+          if (this.#gamepadIndex !== -1) {
             const [buttons, axes] = value;
             this.controls.input(buttons, axes);
-          } else {
+          /*} else {
             const { buttons, axes } = this.sab;
             this.controls.input(buttons, axes);
-          }
-        } else {
-          if (!this.params.crossOriginIsolated) {
+          }*/
+          } else {
             const [pointerValues, keyValues] = value;
             this.controls.handleEvents(pointerValues, keyValues);
-          } else {
-            this.controls.handleEvents(
-              this.sab.pointerValues,
-              this.sab.keyValues,
-            );
-            this.sab.pointerValues.fill(0);
-            this.sab.keyValues.fill(0);
+            this.controls.input();
           }
-
-          this.controls.input();
         }
-
-        //this.update();
 
         break;
       }
@@ -655,15 +659,6 @@ class WorkerMain {
     this.params[name] = value;
   }
 
-  loop() {/////////////
-    const playState = this.game.states.get('playState');
-
-    if (playState === PlayState.running) {
-      this.update();
-      requestAnimationFrame(this.loop);
-    }
-  }
-
   start() {
     const playState = this.game.states.get('playState');
     const currentTime = performance.now() / 1000;
@@ -677,11 +672,17 @@ class WorkerMain {
 
     this.game.states.set('playState', PlayState.running);
 
-    this.loop();/////////////
+    if (!this.loop.isActive()) {/////////
+      this.loop.start();
+    }
   }
 
   stop() {
     this.game.states.set('playState', PlayState.idle);
+
+    if (this.loop.isActive()) {/////////
+      this.loop.stop();
+    }
   }
 
   pause() {
@@ -690,9 +691,13 @@ class WorkerMain {
     if (playState === PlayState.running) {
       this.game.states.set('playState', PlayState.paused);
     }
+
+    if (this.loop.isActive()) {//////////
+      this.loop.stop();
+    }
   }
 
-  async awaitWorker() {
+  /*async awaitWorker() {
     const wait = Atomics.waitAsync(this.sab.waitWorker, 0, 0);
     await wait.value;
 
@@ -702,15 +707,52 @@ class WorkerMain {
     this.controls.input();
 
     this.update();
-  }
+  }*/
 
-  update() {
+  async update() {
     this.#frameCount += 1;
 
-    const { framerateCoef } = this.params;//////////
+    const { framerateCoef, crossOriginIsolated, canUseWaitAsync } = this.params;
 
-    if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {///////////
-      return;
+    if (crossOriginIsolated && canUseWaitAsync) {///////////
+      if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
+        return Atomics.notify(this.sab.waitWorker, 0);
+      }
+    } else {
+      if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
+        return Promise.resolve();
+      }
+    }
+
+    if (crossOriginIsolated && canUseWaitAsync) {
+      Atomics.notify(this.sab.waitMain, 0);
+      this.updateWorker();
+    } else {
+      const { promise, resolve } = Promise.withResolvers();
+      this.#mainUpdated = resolve;
+      self.postMessage({ type: 'update' });
+      this.updateWorker();
+      return promise;
+    }
+  }
+
+  updateWorker() {
+    const { crossOriginIsolated } = this.params;
+
+    if (crossOriginIsolated) {
+      if (this.#gamepadIndex !== -1) {
+        const { buttons, axes } = this.sab;
+        this.controls.input(buttons, axes);
+      } else {
+        this.controls.handleEvents(
+          this.sab.pointerValues,
+          this.sab.keyValues,
+        );
+        this.sab.pointerValues.fill(0);
+        this.sab.keyValues.fill(0);
+
+        this.controls.input();
+      }
     }
 
     let elapsedTime = this.#elapsedTime;
@@ -741,8 +783,6 @@ class WorkerMain {
 
     this.game.states.set('time', this.#elapsedTime);
 
-    const { crossOriginIsolated, canUseWaitAsync } = this.params;
-
     if (!crossOriginIsolated) {
       if (this.#frameCount % GameSettings.SkipFrames === 0) {
         self.postMessage({
@@ -752,13 +792,6 @@ class WorkerMain {
       }
     } else {
       this.sab.time[0] = this.#elapsedTime;
-    }
-
-    if (!(crossOriginIsolated && canUseWaitAsync)) {
-      //self.postMessage({ type: 'worker-updated' });
-    } else {
-      this.awaitWorker();
-      Atomics.notify(this.sab.waitMain, 0);
     }
   }
 }

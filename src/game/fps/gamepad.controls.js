@@ -282,8 +282,8 @@ class GamepadControls extends Publisher {
     value = this.axes.get('rt2');
 
     if (value > 0) {
-      if (!this.#pendings.has(axis)) {
-        this.#pendings.add(axis);
+      if (!this.#pendings.has('rt2')) {
+        this.#pendings.add('rt2');
         this.#actions.set(Actions.trigger, value);
       }
     }
@@ -291,8 +291,8 @@ class GamepadControls extends Publisher {
     value = this.axes.get('lt2');
     
     if (value > 0) {
-      if (!this.#pendings.has(axis)) {
-        this.#pendings.add(axis);
+      if (!this.#pendings.has('lt2')) {
+        this.#pendings.add('lt2');
       }
     }
 
