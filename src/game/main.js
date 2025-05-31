@@ -8,7 +8,8 @@ import Publisher from './publisher';
 import DomEvents from './dom-events';
 import AudioManager from './audio-manager';
 import TextureManager from './texture-manager';
-import Loop from './async-loop';
+import Loop from './loop';
+//import Loop from './async-loop';
 
 const { floor } = Math;
 const {
@@ -119,11 +120,12 @@ class Game extends Publisher {
     };
 
     this.update = this.update.bind(this);
-    this.loop = new Loop(
+    this.loop = new Loop(this.update, this);
+    /*this.loop = new Loop(
       this.update,
       crossOriginIsolated && canUseWaitAsync,
       this.#sab != null ? this.#sab.waitMain : null,
-    );
+    );*/
 
     this.init(data);
   }
@@ -490,9 +492,9 @@ class Game extends Publisher {
       );
       this.pointerValues = new Float32Array(PointerEventSize);
       this.keyValues = new Float32Array(KeyEventSize);
-    } else if (canUseWaitAsync) {
+    }/* else if (canUseWaitAsync) {
       Atomics.notify(this.#sab.waitWorker, 0);
-    } else {
+    }*/ else {
       this.worker.postMessage({ type: 'update' });
     }
   }
@@ -503,15 +505,15 @@ class Game extends Publisher {
     const { framerateCoef, crossOriginIsolated, canUseWaitAsync } = this.params;
 
     if (crossOriginIsolated && canUseWaitAsync) {
-      if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
+      /*if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
         return Atomics.notify(this.#sab.waitMain, 0);
-      }
+      }*/
 
       this.updateMain();
     } else {
-      if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
+      /*if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
         return Promise.resolve();
-      }
+      }*/
 
       const { promise, resolve } = Promise.withResolvers();
       this.#workerUpdated = resolve;

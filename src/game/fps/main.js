@@ -187,6 +187,9 @@ class WorkerMain {
     if (this.params.crossOriginIsolated && this.params.canUseWaitAsync) {
       this.awaitWorker();
     }
+
+    this.update = this.update.bind(this);
+    this.loop = this.loop.bind(this);
   }
 
   async init() {
@@ -389,7 +392,7 @@ class WorkerMain {
           this.controls.input();
         }
 
-        this.update();
+        //this.update();
 
         break;
       }
@@ -652,6 +655,15 @@ class WorkerMain {
     this.params[name] = value;
   }
 
+  loop() {/////////////
+    const playState = this.game.states.get('playState');
+
+    if (playState === PlayState.running) {
+      this.update();
+      requestAnimationFrame(this.loop);
+    }
+  }
+
   start() {
     const playState = this.game.states.get('playState');
     const currentTime = performance.now() / 1000;
@@ -664,6 +676,8 @@ class WorkerMain {
     }
 
     this.game.states.set('playState', PlayState.running);
+
+    this.loop();/////////////
   }
 
   stop() {
@@ -692,6 +706,12 @@ class WorkerMain {
 
   update() {
     this.#frameCount += 1;
+
+    const { framerateCoef } = this.params;//////////
+
+    if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {///////////
+      return;
+    }
 
     let elapsedTime = this.#elapsedTime;
     const currentTime = performance.now() * 0.001;
@@ -735,7 +755,7 @@ class WorkerMain {
     }
 
     if (!(crossOriginIsolated && canUseWaitAsync)) {
-      self.postMessage({ type: 'worker-updated' });
+      //self.postMessage({ type: 'worker-updated' });
     } else {
       this.awaitWorker();
       Atomics.notify(this.sab.waitMain, 0);
