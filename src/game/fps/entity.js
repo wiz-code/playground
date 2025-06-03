@@ -1,4 +1,4 @@
-import { Vector3, Spherical, Group } from 'three';
+import { Vector3, Euler, Group } from 'three';
 
 import EventDispatcher from './event-dispatcher';
 import { genId, disposeObject, getRandomDistance } from './utils';
@@ -11,6 +11,8 @@ class Entity extends EventDispatcher {
   #states = new Set();
 
   #vec = new Vector3();
+
+  #euler = new Euler();
 
   #pos = new Vector3();
 
@@ -59,7 +61,12 @@ class Entity extends EventDispatcher {
     const { collider } = this.collidable;
 
     if (rotation != null) {
-      this.collidable.updateRotation(rotation);
+      const x = rotation.x ?? 0;
+      const y = rotation.y ?? 0;
+      const z = rotation.z ?? 0;
+
+      this.#euler.set(x, y, z);
+      this.collidable.updateRotation(this.#euler);
     }
 
     if (position != null) {
@@ -196,7 +203,7 @@ class Entity extends EventDispatcher {
 
   startAnimation(command) {
     if (this.collidable != null) {
-      this.collidable.traverse(({ skeletal }) => {
+      this.collidable.traverse(({ name, skeletal }) => {
         if (skeletal != null) {
           skeletal.dispatchCommand(command);
         }

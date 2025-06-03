@@ -162,9 +162,9 @@ class Collidable {
       this.skeletal = new Skeletal(name, this.object, this, options);
     }
 
-    this.rotation = new Quaternion();
-    this.position = new Vector3();
-    this.quaternion = new Quaternion();
+    this.rotation = new Quaternion(); // ローカル回転
+    this.quaternion = new Quaternion(); // グローバル回転
+    this.position = new Vector3(); // ローカル座標
 
     if (children.length > 0) {
       for (let i = 0, l = children.length; i < l; i += 1) {
@@ -208,25 +208,32 @@ class Collidable {
   }
 
   updatePosition(vec) {
-    this.#v1.copy(vec);
-    this.collider.getCenter(this.#v2);
-    this.#v1.sub(this.#v2);
+    if (this.parent == null) {
+      this.#v1.copy(vec);
+      this.collider.getCenter(this.#v2);
+      this.#v1.sub(this.#v2);
 
-    this.traverse(({ collider }) => {
-      collider.moveBy(this.#v1);
-    });
+      this.traverse(({ collider }) => {
+        collider.moveBy(this.#v1);
+      });
+    } else {
+      this.body.position.copy(vec);
+      this.position.copy(vec);
+      //this.#q1.identity();
+      //this.updateDeltaRotation(this.#q1);
+    }
   }
 
-  updateRotation({ x = 0, y = 0, z = 0 }) {
-    this.#rot.x = x;
-    this.#rot.y = y;
-    this.#rot.z = z;
+  updateRotation(rotation) {
+    if (rotation.isEuler) {
+      this.#q1.setFromEuler(rotation);
+    } else {
+      this.#q1.copy(rotation);
+    }
 
-    this.#q1.setFromEuler(this.#rot);
     this.#q2.copy(this.rotation).conjugate();
-    this.#q1.multiply(this.#q2);
-
-    this.updateDeltaRotation(this.#q1);
+    this.#q2.multiply(this.#q1).normalize();
+    this.updateDeltaRotation(this.#q2);
   }
 
   updateDeltaRotation(quat) {
@@ -294,21 +301,17 @@ class Collidable {
 
     return flag;
   }
-
-  static init(root) {
-    const center = new Vector3();
-    const vec = new Vector3();
+static init(root) {
     const euler = new Euler();
-    const quat = new Quaternion();
 
-    root.traverse((col, depth) => {
+    root.traverse((col) => {
       const { offset, rotation, position } = col;
       const { rotation: rot = {}, position: pos = {} } = offset;
 
       euler.x = rot.x ?? 0;
       euler.y = rot.y ?? 0;
       euler.z = rot.z ?? 0;
-      rotation.multiply(new Quaternion().setFromEuler(euler));
+      rotation.copy(new Quaternion().setFromEuler(euler));
 
       position.x = pos.x ?? 0;
       position.y = pos.y ?? 0;

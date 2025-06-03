@@ -143,7 +143,7 @@ class Character extends Entity {
 
     const { body, collider } = this.collidable;
     /// //////////
-    if (!this.hasControls) {
+    if (!this.hasControls) {//this.name === '敵キャラ１' && console.log(collider.getCenter(new Vector3()))
       this.collidable.traverse((col) => {
         col.collider.getCenter(this.#pos, col.type === 'arm');
         col.mesh.position.copy(this.#pos);

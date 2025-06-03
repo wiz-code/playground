@@ -187,16 +187,12 @@ class WorkerMain {
 
     this.init();
 
-    this.update = this.update.bind(this);//////////////
-    this.loop = new Loop(//////////////////////
+    this.update = this.update.bind(this);
+    this.loop = new Loop(
       this.update,
       this.params.crossOriginIsolated && this.params.canUseWaitAsync,
       this.sab != null ? this.sab.waitWorker : null,
     );
-
-    /*if (this.params.crossOriginIsolated && this.params.canUseWaitAsync) {
-      this.awaitWorker();
-    }*/
   }
 
   async init() {
@@ -387,10 +383,6 @@ class WorkerMain {
           if (this.#gamepadIndex !== -1) {
             const [buttons, axes] = value;
             this.controls.input(buttons, axes);
-          /*} else {
-            const { buttons, axes } = this.sab;
-            this.controls.input(buttons, axes);
-          }*/
           } else {
             const [pointerValues, keyValues] = value;
             this.controls.handleEvents(pointerValues, keyValues);
@@ -649,8 +641,6 @@ class WorkerMain {
     this.scene.field.clear();
     this.scene.screen.clear();
 
-    // this.skeletalManager.dispose(); /// /////////
-
     this.renderer.dispose();
     self.close();
   }
@@ -672,7 +662,7 @@ class WorkerMain {
 
     this.game.states.set('playState', PlayState.running);
 
-    if (!this.loop.isActive()) {/////////
+    if (!this.loop.isActive()) {
       this.loop.start();
     }
   }
@@ -680,7 +670,7 @@ class WorkerMain {
   stop() {
     this.game.states.set('playState', PlayState.idle);
 
-    if (this.loop.isActive()) {/////////
+    if (this.loop.isActive()) {
       this.loop.stop();
     }
   }
@@ -692,22 +682,10 @@ class WorkerMain {
       this.game.states.set('playState', PlayState.paused);
     }
 
-    if (this.loop.isActive()) {//////////
+    if (this.loop.isActive()) {
       this.loop.stop();
     }
   }
-
-  /*async awaitWorker() {
-    const wait = Atomics.waitAsync(this.sab.waitWorker, 0, 0);
-    await wait.value;
-
-    this.controls.handleEvents(this.sab.pointerValues, this.sab.keyValues);
-    this.sab.pointerValues.fill(0);
-    this.sab.keyValues.fill(0);
-    this.controls.input();
-
-    this.update();
-  }*/
 
   async update() {
     this.#frameCount += 1;
@@ -728,9 +706,11 @@ class WorkerMain {
       Atomics.notify(this.sab.waitMain, 0);
       this.updateWorker();
     } else {
+      self.postMessage({ type: 'update' });
+      
       const { promise, resolve } = Promise.withResolvers();
       this.#mainUpdated = resolve;
-      self.postMessage({ type: 'update' });
+      
       this.updateWorker();
       return promise;
     }

@@ -43,6 +43,7 @@ class Capsule {
   rotate(quaternion, role) {
     if (role === 'arm') {
       this.normal.copy(Axis.z).applyQuaternion(quaternion);
+      this.normal.normalize();
       this.end.copy(
         this.#v2.addVectors(
           this.start,
@@ -51,6 +52,7 @@ class Capsule {
       );
     } else {
       this.normal.copy(Axis.y).applyQuaternion(quaternion);
+      this.normal.normalize();
       this.getCenter(this.#c1);
 
       this.end.copy(

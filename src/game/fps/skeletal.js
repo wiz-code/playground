@@ -26,15 +26,17 @@ const { PI } = Math;
 const rotationCoef = 1;
 
 class Skeletal {
-  #deltaQuat = new Quaternion();
-
-  #prevQuat = new Quaternion();
+  #quat = new Quaternion();
 
   constructor(name, object, collidable, options = {}) {
     this.name = name;
     this.object = object;
     this.collidable = collidable;
-    this.options = options;
+    this.options = {
+      relative: true,
+
+      ...options,
+    };
 
     this.keys = new Set();
     this.transform = {
@@ -57,37 +59,40 @@ class Skeletal {
 
         for (let i = 0, l = times.length; i < l; i += 1) {
           const state = states[i];
-          const posings = posingMap.get(state);
 
-          for (let j = 0, m = posings.length; j < m; j += 1) {
-            const posing = posings[j];
-            const {
-              key,
-              transform: { rotation },
-            } = posing;
-            this.keys.add(key);
+          if (posingMap.has(state)) {
+            const posings = posingMap.get(state);
 
-            if (key.includes('.quaternion')) {
-              if (!results.has(key)) {
-                results.set(key, []);
+            for (let j = 0, m = posings.length; j < m; j += 1) {
+              const posing = posings[j];
+              const {
+                key,
+                transform: { rotation },
+              } = posing;
+              this.keys.add(key);
+
+              if (key.includes('.quaternion')) {
+                if (!results.has(key)) {
+                  results.set(key, []);
+                }
+
+                if (rotation != null) {
+                  const rx = rotation.x ?? 0;
+                  const ry = rotation.y ?? 0;
+                  const rz = rotation.z ?? 0;
+                  const euler = new Euler(rx, ry, rz);
+                  const quat = new Quaternion().setFromEuler(euler);
+
+                  const values = results.get(key);
+                  values.push(quat);
+                }
+              } else if (key.includes('.position')) {
+                if (!results.has(key)) {
+                  results.set(key, []);
+                }
+
+                //TODO
               }
-
-              if (rotation != null) {
-                const rx = rotation.x ?? 0;
-                const ry = rotation.y ?? 0;
-                const rz = rotation.z ?? 0;
-                const euler = new Euler(rx, ry, rz);
-                const quat = new Quaternion().setFromEuler(euler);
-
-                const values = results.get(key);
-                values.push(quat);
-              }
-            } else if (key.includes('.position')) {
-              if (!results.has(key)) {
-                results.set(key, []);
-              }
-
-              //TODO
             }
           }
         }
@@ -132,7 +137,7 @@ class Skeletal {
       const clipName = `command-${command}:${this.name}`;
       const clip = AnimationClip.findByName(this.clips, clipName);
 
-      if (clip != null) {
+      if (clip != null) {console.log(clipName)
         const action = this.mixer.clipAction(clip);
         const loop = this.options.loop === true ? LoopRepeat : LoopOnce;
         action.loop = loop;
@@ -144,7 +149,7 @@ class Skeletal {
   update(deltaTime) {
     if (this.object.isAlive()) {
       this.mixer.update(deltaTime);
-      let finished = false;
+      let finished = true;
 
       for (let i = 0, l = this.clips.length; i < l; i += 1) {
         const clip = this.clips[i];
@@ -152,26 +157,34 @@ class Skeletal {
         const prev = this.prevMap.get(clip);
 
         if (action != null && action.isRunning()) {
+          finished = false;
           const { body } = this.collidable;
           const { quaternion } = this.transform;
+          const { relative } = this.options;
 
           for (const key of this.keys) {
             if (key.includes('.quaternion')) {
               if (!quaternion.equals(prev.quaternion)) {
-                this.#deltaQuat.copy(quaternion);
-                this.#deltaQuat.multiply(prev.quaternion.conjugate());
+                if (relative) {
+                  this.#quat.copy(prev.quaternion).conjugate();
+                  this.#quat.multiply(quaternion).normalize();
 
-                this.collidable.updateDeltaRotation(this.#deltaQuat);
-                prev.quaternion.copy(quaternion);
+                  this.collidable.updateDeltaRotation(this.#quat);
+                  body.quaternion.multiply(this.#quat);
+                } else {
+                  if (!quaternion.equals(prev.quaternion)) {
+                    this.collidable.updateRotation(quaternion);
+                  }
 
-                body.quaternion.multiply(this.#deltaQuat);
+                  body.quaternion.copy(quaternion);
+                }
               }
+
+              prev.quaternion.copy(quaternion);
             } else if (key.includes('.position')) {
               // TODO
             }
           }
-        } else {
-          finished = true;
         }
       }
 

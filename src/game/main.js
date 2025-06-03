@@ -306,14 +306,6 @@ class Game extends Publisher {
           break;
         }
 
-        /*case 'worker-updated': {
-          if (this.#workerUpdated != null) {
-            this.#workerUpdated();
-            this.#workerUpdated = null;
-          }
-          break;
-        }*/
-
         default: {
         }
       }
@@ -325,9 +317,9 @@ class Game extends Publisher {
     window.addEventListener('resize', this.onResize);
     this.worker.addEventListener('message', this.onMessage);
 
-    const { crossOriginIsolated, canUseWaitAsync } = this.params;//////////
+    const { crossOriginIsolated, canUseWaitAsync } = this.params;
 
-    if (crossOriginIsolated && canUseWaitAsync) {////////////
+    if (crossOriginIsolated && canUseWaitAsync) {
       this.awaitMain();
     }
   }
@@ -403,30 +395,19 @@ class Game extends Publisher {
   }
 
   start(active = false) {
-    //if (!this.loop.isActive()) {
-      //this.loop.start();
-
-      if (active) {
-        this.worker.postMessage({ type: 'start' });
-      }
-    //}
+    if (active) {
+      this.worker.postMessage({ type: 'start' });
+    }
   }
 
   pause() {
-    //if (this.loop.isActive()) {
-      //this.loop.stop();
-      this.worker.postMessage({ type: 'pause' });
-    //}
+    this.worker.postMessage({ type: 'pause' });
   }
 
   stop(active = false) {
-    //if (this.loop.isActive()) {
-      //this.loop.stop();
-
-      if (active) {
-        this.worker.postMessage({ type: 'stop' });
-      }
-    //}
+    if (active) {
+      this.worker.postMessage({ type: 'stop' });
+    }
   }
 
   dispose() {
@@ -462,11 +443,6 @@ class Game extends Publisher {
     const wait = Atomics.waitAsync(this.#sab.waitMain, 0, 0);
     await wait.value;
 
-    /*this.controls.handleEvents(this.sab.pointerValues, this.sab.keyValues);
-    this.sab.pointerValues.fill(0);
-    this.sab.keyValues.fill(0);
-    this.controls.input();*/
-
     this.update();
   }
 
@@ -478,14 +454,6 @@ class Game extends Publisher {
     }
 
     const { framerateCoef, crossOriginIsolated, canUseWaitAsync } = this.params;
-
-    if (
-      crossOriginIsolated &&
-      this.#frameCount % GameSettings.SkipFrames === 0
-    ) {
-      const [time] = this.#sab.time;
-      this.callbacks.setElapsedTime(time);
-    }
 
     if (this.#gamepadIndex !== -1) {
       const gamepads = window.navigator.getGamepads();
@@ -505,8 +473,6 @@ class Game extends Publisher {
       } else {
         this.#sab.buttons.set(buttons);
         this.#sab.axes.set(axes);
-
-        /////this.worker.postMessage({ type: 'update' });
       }
     } else if (!crossOriginIsolated) {
       this.worker.postMessage(
@@ -515,43 +481,23 @@ class Game extends Publisher {
       );
       this.pointerValues = new Float32Array(PointerEventSize);
       this.keyValues = new Float32Array(KeyEventSize);
-    }/* else if (canUseWaitAsync) {
-      Atomics.notify(this.#sab.waitWorker, 0);
-    } else {
-      this.worker.postMessage({ type: 'update' });
-    }*/
+    }
 
-    if (!(crossOriginIsolated && canUseWaitAsync)) {///////////////
+    if (
+      crossOriginIsolated &&
+      this.#frameCount % GameSettings.SkipFrames === 0
+    ) {
+      const [time] = this.#sab.time;
+      this.callbacks.setElapsedTime(time);
+    }
+
+    if (!(crossOriginIsolated && canUseWaitAsync)) {
       this.worker.postMessage({ type: 'main-updated' });
     } else {
       this.awaitMain();
       Atomics.notify(this.#sab.waitWorker, 0);
     }
   }
-
-  /*update() {
-    this.#frameCount += 1;
-
-    const { framerateCoef, crossOriginIsolated, canUseWaitAsync } = this.params;
-
-    if (crossOriginIsolated && canUseWaitAsync) {
-      if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
-        return Atomics.notify(this.#sab.waitMain, 0);
-      }
-
-      this.updateMain();
-    } else {
-      if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
-        return Promise.resolve();
-      }
-
-      const { promise, resolve } = Promise.withResolvers();
-      this.#workerUpdated = resolve;
-      this.updateMain();
-
-      return promise;
-    }
-  }*/
 }
 
 export default Game;

@@ -34,8 +34,11 @@ const Levels = [
                       condition: { delay: 3 },
                       params: {
                         position: { x: 0, y: 3, z: 0 },
-                        // position: { x: -6, y: 3, z: 0 },
-                        rotation: { y: (90 / 360) * PI * 2 },
+                        //rotation: { y: (90 / 360) * PI * 2 },
+                        rotation: {
+                          //x: (90 / 360) * PI * 2,
+                          y: (90 / 360) * PI * 2,
+                        },
                       },
                       handler: 'show',
                     },
@@ -45,7 +48,8 @@ const Levels = [
                       type: 'timeout',
                       condition: { delay: 10 },
                       params: {
-                        command: Commands.HandsUp,
+                        //command: Commands.HandsUp,
+                        command: Commands.JabPunch,
                       },
                       handler: 'start-animation',
                     },
@@ -140,7 +144,7 @@ const Levels = [
                     position: { x: 0, y: -5, z: 0 },
                     rotation: { x: 0, y: 0, z: 0 },
                   },
-                  /* {
+                  /*{
                     widthSegments: 7,
                     depthSegments: 20,
                     bumpHeight: 0.9,
@@ -153,7 +157,7 @@ const Levels = [
                     bumpHeight: 0.9,
                     position: { x: 2.4, y: -2, z: 0 },
                     rotation: { x: 0, y: 0, z: 1.5 },
-                  }, */
+                  },*/
                 ],
               },
             },

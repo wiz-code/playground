@@ -54,7 +54,7 @@ export const Characters = [
         turnSpeed: 1.8,
         sprint: 2.5,
         urgencyMoveAccel: 8,
-        rotAccel: 50, // 20,
+        rotAccel: 50,
 
         jumpPower: 120,
         satelliteSpeed: 2,
@@ -101,7 +101,7 @@ export const Characters = [
         turnSpeed: 1.8,
         sprint: 2.5,
         urgencyMoveAccel: 8,
-        rotAccel: 50, // 20,
+        rotAccel: 50,
 
         jumpPower: 120,
         satelliteSpeed: 2,
@@ -110,6 +110,13 @@ export const Characters = [
       collidable: {
         name: 'body2',
         type: 'object',
+        offset: {/////////////////////
+          rotation: {
+            x: (0 / 360) * PI * 2,
+            y: (0 / 360) * PI * 2,
+            z: (0 / 360) * PI * 2,
+          },
+        },
 
         body: {
           shape: 'body',
@@ -164,7 +171,7 @@ export const Characters = [
               size: { radius: 0.7 },
               // enabled: false,
             },
-            skeletal: { name: 'left-shoulder', options: { loop: true } },
+            skeletal: { name: 'left-shoulder', options: { loop: true, relative: true } },
             children: [
               {
                 name: 'left-upper-arm',
