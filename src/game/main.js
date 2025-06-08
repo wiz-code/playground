@@ -8,7 +8,7 @@ import Publisher from './publisher';
 import DomEvents from './dom-events';
 import AudioManager from './audio-manager';
 import TextureManager from './texture-manager';
-//import Loop from './async-loop';
+// import Loop from './async-loop';
 
 const { floor } = Math;
 const {
@@ -118,12 +118,12 @@ class Game extends Publisher {
       sab: this.#sab,
     };
 
-    /*this.update = this.update.bind(this);
+    /* this.update = this.update.bind(this);
     this.loop = new Loop(
       this.update,
       crossOriginIsolated && canUseWaitAsync,
       this.#sab != null ? this.#sab.waitMain : null,
-    );*/
+    ); */
 
     this.init(data);
   }
@@ -315,6 +315,7 @@ class Game extends Publisher {
     this.onResize = debounce(GameSettings.resizeDelayTime, onResize.bind(this));
 
     window.addEventListener('resize', this.onResize);
+    window.addEventListener('beforeunload', this.onBeforeUnload);
     this.worker.addEventListener('message', this.onMessage);
 
     const { crossOriginIsolated, canUseWaitAsync } = this.params;
@@ -384,6 +385,11 @@ class Game extends Publisher {
     }
   }
 
+  onBeforeUnload(e) {
+    e.preventDefault();
+    e.returnValue = 'タブを閉じようとしています';
+  }
+
   enableStats(bool = true) {
     this.#statsEnabled = bool;
 
@@ -417,6 +423,7 @@ class Game extends Publisher {
       'gamepaddisconnected',
       this.onGamepadDisconnected,
     );
+    window.removeEventListener('beforeunload', this.onBeforeUnload);
     this.worker.removeEventListener('message', this.onMessage);
 
     this.domEvents.dispose();

@@ -91,7 +91,7 @@ class Skeletal {
                   results.set(key, []);
                 }
 
-                //TODO
+                // TODO
               }
             }
           }
@@ -137,7 +137,7 @@ class Skeletal {
       const clipName = `command-${command}:${this.name}`;
       const clip = AnimationClip.findByName(this.clips, clipName);
 
-      if (clip != null) {console.log(clipName)
+      if (clip != null) {
         const action = this.mixer.clipAction(clip);
         const loop = this.options.loop === true ? LoopRepeat : LoopOnce;
         action.loop = loop;

@@ -91,7 +91,9 @@ class Movable extends Publisher {
     const [x, y, z] = positions.subarray(index, index + 3);
     this.#currentPos.set(x, y, z);
 
-    this.velocity.subVectors(this.#currentPos, this.#prevPos).divideScalar(deltaTime);
+    this.velocity
+      .subVectors(this.#currentPos, this.#prevPos)
+      .divideScalar(deltaTime);
     this.#prevPos.copy(this.#currentPos);
   }
 }

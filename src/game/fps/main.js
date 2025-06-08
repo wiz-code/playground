@@ -9,7 +9,7 @@ import {
   Texture,
   SRGBColorSpace,
 } from 'three';
-//import { WebGPURenderer } from 'three/webgpu';
+// import { WebGPURenderer } from 'three/webgpu';
 
 import { Game as GameSettings } from '../settings';
 import { Scene, Camera, World, Light } from './settings';
@@ -31,7 +31,7 @@ import EventManager from './event-manager';
 import MovableManager from './movable-manager';
 import GridProcessor from './grid-processor';
 import Movable from './movable';
-import Loop from '../async-loop';/////////////
+import Loop from '../async-loop'; /// //////////
 
 import { offsetPosition, disposeObject } from './utils';
 
@@ -476,7 +476,7 @@ class WorkerMain {
       const edata = {
         id: 'enemy-2',
         name: '敵キャラ２',
-        subtype: 'heroine-1',
+        subtype: 'hero-2',
 
         events: [
           {
@@ -692,14 +692,13 @@ class WorkerMain {
 
     const { framerateCoef, crossOriginIsolated, canUseWaitAsync } = this.params;
 
-    if (crossOriginIsolated && canUseWaitAsync) {///////////
+    if (crossOriginIsolated && canUseWaitAsync) {
+      /// ////////
       if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
         return Atomics.notify(this.sab.waitWorker, 0);
       }
-    } else {
-      if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
-        return Promise.resolve();
-      }
+    } else if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
+      return Promise.resolve();
     }
 
     if (crossOriginIsolated && canUseWaitAsync) {
@@ -707,10 +706,10 @@ class WorkerMain {
       this.updateWorker();
     } else {
       self.postMessage({ type: 'update' });
-      
+
       const { promise, resolve } = Promise.withResolvers();
       this.#mainUpdated = resolve;
-      
+
       this.updateWorker();
       return promise;
     }
@@ -724,10 +723,7 @@ class WorkerMain {
         const { buttons, axes } = this.sab;
         this.controls.input(buttons, axes);
       } else {
-        this.controls.handleEvents(
-          this.sab.pointerValues,
-          this.sab.keyValues,
-        );
+        this.controls.handleEvents(this.sab.pointerValues, this.sab.keyValues);
         this.sab.pointerValues.fill(0);
         this.sab.keyValues.fill(0);
 

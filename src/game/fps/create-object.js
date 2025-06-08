@@ -1,5 +1,5 @@
 import {
-  CircleGeometry,//////////////
+  CircleGeometry, /// ///////////
   CapsuleGeometry,
   ConeGeometry,
   EdgesGeometry,
@@ -18,7 +18,10 @@ import {
   Points,
   Group,
 } from 'three';
-import { mergeGeometries, mergeVertices } from 'three/addons/utils/BufferGeometryUtils.js';
+import {
+  mergeGeometries,
+  mergeVertices,
+} from 'three/addons/utils/BufferGeometryUtils.js';
 
 import { Game } from '../settings';
 import { World, Screen } from './settings';
@@ -119,7 +122,9 @@ export const createPolyhedron = (
     if (satellite) {
       const pointDetail = size.pointDetail ?? 0;
       geometry.points = new OctahedronGeometry(size.radius + 1, pointDetail);
-      const pointsVertices = geometry.points.getAttribute('position').array.slice();
+      const pointsVertices = geometry.points
+        .getAttribute('position')
+        .array.slice();
 
       geometry.points = new BufferGeometry();
       geometry.points.setAttribute(
@@ -204,7 +209,9 @@ export const createSphere = (subtype, name, type, body, offset) => {
     );
 
     if (type === 'joint') {
-      let index, offset, count;
+      let index;
+      let offset;
+      let count;
       const halfWidthSegs = floor(widthSegments * 0.5);
 
       for (let i = 0; i < heightSegments; i += 1) {
@@ -393,7 +400,13 @@ export const createCapsule = (subtype, name, type, body, offset) => {
     const capSegments = size.capSegments ?? 4;
     const radiusSegments = size.radiusSegments ?? 8;
     const heightSegments = size.heightSegments ?? 1;
-    geometry.body = new CapsuleGeometry(size.radius, size.height, capSegments, radiusSegments, heightSegments);
+    geometry.body = new CapsuleGeometry(
+      size.radius,
+      size.height,
+      capSegments,
+      radiusSegments,
+      heightSegments,
+    );
 
     if (type === 'arm') {
       const totalSegs = capSegments * 2 + heightSegments;
@@ -401,9 +414,13 @@ export const createCapsule = (subtype, name, type, body, offset) => {
       for (let i = 0; i < totalSegs; i += 1) {
         const index = i * radiusSegments * 2;
         geometry.body.addGroup(index * 3, radiusSegments * 3, 1);
-        geometry.body.addGroup((index + radiusSegments) * 3, radiusSegments * 3, 0);
+        geometry.body.addGroup(
+          (index + radiusSegments) * 3,
+          radiusSegments * 3,
+          0,
+        );
       }
-      /*const headIndex = (capSegments * radiusSegments * 2 + heightSegments * radiusSegments * 2) * 3;
+      /* const headIndex = (capSegments * radiusSegments * 2 + heightSegments * radiusSegments * 2) * 3;
 
       for (let i = 0; i < capSegments; i += 1) {
         const index = i * radiusSegments * 2;
@@ -420,7 +437,7 @@ export const createCapsule = (subtype, name, type, body, offset) => {
         const index = i * radiusSegments * 2;
         geometry.body.addGroup(bottomIndices + index * 3, radiusSegments * 3, 1);
         geometry.body.addGroup(bottomIndices + (index + radiusSegments) * 3, radiusSegments * 3, 0);
-      }*/
+      } */
     }
 
     if (wireframe) {
@@ -430,7 +447,8 @@ export const createCapsule = (subtype, name, type, body, offset) => {
     if (satellite) {
       const additional = pointSizeMap.get(pointSize);
       const radius = size.radius + additional;
-      const heightSegments = (size.height > pointGap ? floor(size.height / pointGap) : 0) + 1;
+      const heightSegments =
+        (size.height > pointGap ? floor(size.height / pointGap) : 0) + 1;
       let geom;
 
       if (satelliteCap == 'both') {
@@ -438,11 +456,25 @@ export const createCapsule = (subtype, name, type, body, offset) => {
       } else if (satelliteCap === 'end') {
         const geom1 = new ConeGeometry(radius, radius, 3);
         geom1.translate(0, (size.height + radius) * 0.5, 0);
-        const geom2 = new CylinderGeometry(radius, radius, size.height, 3, heightSegments, true);
+        const geom2 = new CylinderGeometry(
+          radius,
+          radius,
+          size.height,
+          3,
+          heightSegments,
+          true,
+        );
         geom = mergeGeometries([geom1, geom2]);
         geom = mergeVertices(geom);
       } else {
-        geom = new CylinderGeometry(radius, radius, size.height, 3, heightSegments, true);
+        geom = new CylinderGeometry(
+          radius,
+          radius,
+          size.height,
+          3,
+          heightSegments,
+          true,
+        );
       }
       const vertices = geom.getAttribute('position').array.slice();
 
@@ -476,7 +508,7 @@ export const createCapsule = (subtype, name, type, body, offset) => {
         }
       }
     }
-    
+
     if (transform != null) {
       const { position, rotation } = transform;
 

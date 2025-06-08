@@ -267,11 +267,11 @@ class FirstPersonControls extends Publisher {
         this.#keys.delete(InputKeys.KeyC);
 
         if (this.#keys.has(InputKeys.KeyW)) {
-          this.#keys.delete(InputKeys.KeyW)
+          this.#keys.delete(InputKeys.KeyW);
         }
 
         if (this.#keys.has(InputKeys.ArrowUp)) {
-          this.#keys.delete(InputKeys.ArrowUp)
+          this.#keys.delete(InputKeys.ArrowUp);
         }
       } else {
         this.#actions.set(Actions.moveForward, 1);
@@ -285,31 +285,28 @@ class FirstPersonControls extends Publisher {
         this.#keys.delete(InputKeys.KeyC);
 
         if (this.#keys.has(InputKeys.KeyS)) {
-          this.#keys.delete(InputKeys.KeyS)
+          this.#keys.delete(InputKeys.KeyS);
         }
 
         if (this.#keys.has(InputKeys.ArrowDown)) {
-          this.#keys.delete(InputKeys.ArrowDown)
+          this.#keys.delete(InputKeys.ArrowDown);
         }
       } else {
         this.#actions.set(Actions.moveBackward, -1);
       }
     }
 
-    if (
-      this.#keys.has(InputKeys.KeyA) ||
-      this.#keys.has(InputKeys.ArrowLeft)
-    ) {
+    if (this.#keys.has(InputKeys.KeyA) || this.#keys.has(InputKeys.ArrowLeft)) {
       if (this.#keys.has(InputKeys.KeyC)) {
         this.#actions.set(Actions.quickTurnLeft, 1);
         this.#keys.delete(InputKeys.KeyC);
 
         if (this.#keys.has(InputKeys.KeyA)) {
-          this.#keys.delete(InputKeys.KeyA)
+          this.#keys.delete(InputKeys.KeyA);
         }
 
         if (this.#keys.has(InputKeys.ArrowLeft)) {
-          this.#keys.delete(InputKeys.ArrowLeft)
+          this.#keys.delete(InputKeys.ArrowLeft);
         }
       } else {
         this.#actions.set(Actions.rotateLeft, 1);
@@ -323,11 +320,11 @@ class FirstPersonControls extends Publisher {
         this.#keys.delete(InputKeys.KeyC);
 
         if (this.#keys.has(InputKeys.KeyD)) {
-          this.#keys.delete(InputKeys.KeyD)
+          this.#keys.delete(InputKeys.KeyD);
         }
 
         if (this.#keys.has(InputKeys.ArrowRight)) {
-          this.#keys.delete(InputKeys.ArrowRight)
+          this.#keys.delete(InputKeys.ArrowRight);
         }
       } else {
         this.#actions.set(Actions.rotateRight, -1);
@@ -340,7 +337,7 @@ class FirstPersonControls extends Publisher {
         this.#keys.delete(InputKeys.KeyC);
 
         if (this.#keys.has(InputKeys.KeyQ)) {
-          this.#keys.delete(InputKeys.KeyQ)
+          this.#keys.delete(InputKeys.KeyQ);
         }
       } else {
         this.#actions.set(Actions.moveLeft, -1);
@@ -351,7 +348,7 @@ class FirstPersonControls extends Publisher {
         this.#keys.delete(InputKeys.KeyC);
 
         if (this.#keys.has(InputKeys.KeyE)) {
-          this.#keys.delete(InputKeys.KeyE)
+          this.#keys.delete(InputKeys.KeyE);
         }
       } else {
         this.#actions.set(Actions.moveRight, 1);

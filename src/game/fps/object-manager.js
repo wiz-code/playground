@@ -381,8 +381,8 @@ class ObjectManager extends Publisher {
                   const j = (-(1 + Restitution) * dot * (m1 * m2)) / m;
                   this.#vecC.copy(normal).multiplyScalar(j);
 
-                  //v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
-                  //v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
+                  // v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
+                  // v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
                   av1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
                   av2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
                 }
@@ -422,8 +422,8 @@ class ObjectManager extends Publisher {
                     const j = (-(1 + Restitution) * dot * (m1 * m2)) / m;
                     this.#vecC.copy(normal).multiplyScalar(j);
 
-                    //v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
-                    //v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
+                    // v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
+                    // v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
                     av1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
                     av2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
                   }
@@ -488,8 +488,8 @@ class ObjectManager extends Publisher {
                     const j = (-(1 + Restitution) * dot * (m1 * m2)) / m;
                     this.#vecC.copy(normal).multiplyScalar(j);
 
-                    //v2.add(this.#vecD.copy(this.#vecC).divideScalar(m2));
-                    //v1.sub(this.#vecE.copy(this.#vecC).divideScalar(m1));
+                    // v2.add(this.#vecD.copy(this.#vecC).divideScalar(m2));
+                    // v1.sub(this.#vecE.copy(this.#vecC).divideScalar(m1));
                     av2.add(this.#vecD.copy(this.#vecC).divideScalar(m2));
                     av1.sub(this.#vecE.copy(this.#vecC).divideScalar(m1));
                   }
@@ -556,8 +556,8 @@ class ObjectManager extends Publisher {
 
                   this.#vecC.copy(normal).multiplyScalar(j);
 
-                  //v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
-                  //v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
+                  // v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
+                  // v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
                   av1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
                   av2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
                 }

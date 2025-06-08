@@ -114,7 +114,7 @@ class Character extends Entity {
       velocity.set(0, 0, 0);
     }
 
-    /*this.#v1.copy(velocity);
+    /* this.#v1.copy(velocity);
 
     if (this.platform != null) {
       this.#v2.copy(this.platform.velocity);
@@ -124,7 +124,7 @@ class Character extends Entity {
       this.#v2.set(0, 0, 0);
     }
 
-    this.#move.copy(this.#v1).multiplyScalar(deltaTime);*/
+    this.#move.copy(this.#v1).multiplyScalar(deltaTime); */
     if (this.platform != null) {
       this.#v1.copy(velocity);
       this.#v1.add(this.platform.velocity);
@@ -143,7 +143,8 @@ class Character extends Entity {
 
     const { body, collider } = this.collidable;
     /// //////////
-    if (!this.hasControls) {//this.name === '敵キャラ１' && console.log(collider.getCenter(new Vector3()))
+    if (!this.hasControls) {
+      // this.name === '敵キャラ１' && console.log(collider.getCenter(new Vector3()))
       this.collidable.traverse((col) => {
         col.collider.getCenter(this.#pos, col.type === 'arm');
         col.mesh.position.copy(this.#pos);

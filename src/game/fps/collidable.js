@@ -93,7 +93,13 @@ class Collidable {
         this.offset,
       );
       /// ////////
-      let geom = new CapsuleGeometry(body.size.radius * 1.1, body.size.height, 4, 8, 3);
+      let geom = new CapsuleGeometry(
+        body.size.radius * 1.1,
+        body.size.height,
+        4,
+        8,
+        3,
+      );
       geom.translate(0, body.size.height * 0.5, 0);
       geom = new EdgesGeometry(geom);
       const mat = new MeshBasicMaterial({
@@ -157,7 +163,7 @@ class Collidable {
 
     this.skeletal = null;
 
-    if (skeletal != null/* && this.parent != null*/) {
+    if (skeletal != null /* && this.parent != null */) {
       const { name, options } = skeletal;
       this.skeletal = new Skeletal(name, this.object, this, options);
     }
@@ -176,11 +182,27 @@ class Collidable {
   }
 
   show() {
-    this.traverse(({ body }) => (body.visible = true));
+    if (this.object.hasControls) {
+      this.body.traverse((mesh) => {
+        if (mesh.isMesh || mesh.isLineSegments || mesh.isPoints) {
+          mesh.material.visible = true;
+        }
+      });
+    } else {
+      this.traverse(({ body }) => (body.visible = true));
+    }
   }
 
   hide() {
-    this.traverse(({ body }) => (body.visible = false));
+    if (this.object.hasControls) {
+      this.body.traverse((mesh) => {
+        if (mesh.isMesh || mesh.isLineSegments || mesh.isPoints) {
+          mesh.material.visible = false;
+        }
+      });
+    } else {
+      this.traverse(({ body }) => (body.visible = false));
+    }
   }
 
   attach(scene) {
@@ -219,8 +241,8 @@ class Collidable {
     } else {
       this.body.position.copy(vec);
       this.position.copy(vec);
-      //this.#q1.identity();
-      //this.updateDeltaRotation(this.#q1);
+      // this.#q1.identity();
+      // this.updateDeltaRotation(this.#q1);
     }
   }
 
@@ -238,8 +260,7 @@ class Collidable {
 
   updateDeltaRotation(quat) {
     this.traverse((col, depth) => {
-      const { type, parent, collider, rotation, position, quaternion } =
-        col;
+      const { type, parent, collider, rotation, position, quaternion } = col;
 
       if (depth === 0) {
         rotation.multiply(quat);
@@ -301,7 +322,8 @@ class Collidable {
 
     return flag;
   }
-static init(root) {
+
+  static init(root) {
     const euler = new Euler();
 
     root.traverse((col) => {

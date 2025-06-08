@@ -83,7 +83,7 @@ class DomEvents extends Publisher {
   }
 
   onPointerDown(event) {
-    //this.lock(); // 開発中はコメントアウト
+    this.lock(); // 開発中はコメントアウト
     this.publish('dom-event', 'pointer-down', event.button);
   }
 

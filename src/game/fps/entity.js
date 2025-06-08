@@ -240,17 +240,19 @@ class Entity extends EventDispatcher {
     super.update(deltaTime, elapsedTime);
 
     if (this.collidable != null) {
-      this.collidable.traverse(({ parent, velocity, skeletal, collider, prevPos }) => {
-        if (skeletal != null) {
-          skeletal.update(deltaTime);
-        }
+      this.collidable.traverse(
+        ({ parent, velocity, skeletal, collider, prevPos }) => {
+          if (skeletal != null) {
+            skeletal.update(deltaTime);
+          }
 
-        if (parent != null) {
-          collider.getCenter(this.#center);
-          velocity.subVectors(this.#center, prevPos).divideScalar(deltaTime);
-          prevPos.copy(this.#center);
-        } 
-      });
+          if (parent != null) {
+            collider.getCenter(this.#center);
+            velocity.subVectors(this.#center, prevPos).divideScalar(deltaTime);
+            prevPos.copy(this.#center);
+          }
+        },
+      );
     }
 
     for (let i = 0, l = this.updaters.length; i < l; i += 1) {

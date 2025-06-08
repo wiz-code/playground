@@ -1,8 +1,23 @@
-import { Vector3, Euler, Spherical, Quaternion, BufferGeometry, Mesh } from 'three';
+import {
+  Vector3,
+  Euler,
+  Spherical,
+  Quaternion,
+  BufferGeometry,
+  Mesh,
+} from 'three';
 
 import { createArrow } from './create-object';
-import { Actions, States, InputKeys, MashKeys, Pointers, UrgentActions } from './constants';
+import {
+  Actions,
+  States,
+  InputKeys,
+  MashKeys,
+  Pointers,
+  UrgentActions,
+} from './constants';
 import { Characters } from './data/entities';
+import { Commands } from './data/skeletals';
 import Character from './character';
 import Collidable from './collidable';
 import { Game } from '../settings';
@@ -163,7 +178,9 @@ class Player extends Character {
     this.#sideA.crossVectors(this.#forwardA, Axis.y);
     this.#forwardA.applyAxisAngle(this.#sideA, sign(-value) * Game.RAD30);
 
-    this.collidable.velocity.add(this.#forwardA.multiplyScalar(accel * value * deltaTime));
+    this.collidable.velocity.add(
+      this.#forwardA.multiplyScalar(accel * value * deltaTime),
+    );
   }
 
   rotate(deltaTime, direction, action = -1) {
@@ -212,6 +229,10 @@ class Player extends Character {
     );
   }
 
+  trigger(value) {
+    this.startAnimation(Commands.JabPunch);
+  }
+
   input(actions) {
     // 緊急行動中は入力を受け付けない
     if (this.hasState(States.urgency)) {
@@ -243,7 +264,9 @@ class Player extends Character {
 
   steer(deltaTime) {
     if (this.#precededActions.size > 0 && !this.isStunning()) {
-      this.#precededActions.forEach((value, key) => this.#actions.set(key, value));
+      this.#precededActions.forEach((value, key) =>
+        this.#actions.set(key, value),
+      );
       this.setUrgency();
       this.#precededActions.clear();
     }
@@ -256,7 +279,7 @@ class Player extends Character {
 
     if (this.#actions.has(Actions.trigger)) {
       const value = this.#actions.get(Actions.trigger);
-      // this.trigger(value);
+      this.trigger(value);
       // 連射可能かどうかで以下分岐
       this.#actions.delete(Actions.trigger);
     }
@@ -378,8 +401,6 @@ class Player extends Character {
         this.#normal.set(0, 0, 0);
       }
 
-      
-      
       cpos.copy(this.#pos);
       cpos.addScaledVector(this.#normal, stats.cameraOffsetY);
 
@@ -403,15 +424,9 @@ class Player extends Character {
           .applyAxisAngle(Axis.y, this.lookRotation.theta);
 
         const side = this.#sideC.crossVectors(this.#arrowDir, Axis.y);
-        this.#arrowDir.applyAxisAngle(
-          side,
-          this.lookRotation.phi - HalfPI,
-        );
+        this.#arrowDir.applyAxisAngle(side, this.lookRotation.phi - HalfPI);
 
-        apos.addScaledVector(
-          this.#arrowDir,
-          stats.arrowOffsetZ,
-        );
+        apos.addScaledVector(this.#arrowDir, stats.arrowOffsetZ);
         this.arrow.quaternion.copy(this.collidable.quaternion);
       }
     }

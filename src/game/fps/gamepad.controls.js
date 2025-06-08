@@ -224,7 +224,8 @@ class GamepadControls extends Publisher {
     let value = this.axes.get('lsy');
 
     if (value < -StickEPS) {
-      if (this.#mashed === 1) {this.#mashed = 0;
+      if (this.#mashed === 1) {
+        this.#mashed = 0;
         this.#actions.set(Actions.quickMoveForward, 1);
       } else if (
         this.buttons.get('lsb') === 1 ||
@@ -236,7 +237,8 @@ class GamepadControls extends Publisher {
         this.#actions.set(Actions.moveForward, -value);
       }
     } else if (value > StickEPS) {
-      if (this.#mashed === 1) {this.#mashed = 0;
+      if (this.#mashed === 1) {
+        this.#mashed = 0;
         this.#actions.set(Actions.quickMoveBackward, -1);
       } else {
         this.#actions.set(Actions.moveBackward, -value);
@@ -246,13 +248,15 @@ class GamepadControls extends Publisher {
     value = this.axes.get('lsx');
 
     if (value > StickEPS) {
-      if (this.#mashed === 1) {this.#mashed = 0;
+      if (this.#mashed === 1) {
+        this.#mashed = 0;
         this.#actions.set(Actions.quickTurnRight, -1);
       } else {
         this.#actions.set(Actions.rotateRight, -value);
       }
     } else if (value < -StickEPS) {
-      if (this.#mashed === 1) {this.#mashed = 0;
+      if (this.#mashed === 1) {
+        this.#mashed = 0;
         this.#actions.set(Actions.quickTurnLeft, 1);
       } else {
         this.#actions.set(Actions.rotateLeft, -value);
@@ -289,7 +293,7 @@ class GamepadControls extends Publisher {
     }
 
     value = this.axes.get('lt2');
-    
+
     if (value > 0) {
       if (!this.#pendings.has('lt2')) {
         this.#pendings.add('lt2');
@@ -303,13 +307,15 @@ class GamepadControls extends Publisher {
           this.#actions.set(Actions.jump, value);
         }
       } else if (button === 'lb' && value === 1) {
-        if (this.#mashed === 1) {this.#mashed = 0;
+        if (this.#mashed === 1) {
+          this.#mashed = 0;
           this.#actions.set(Actions.quickMoveLeft, -1);
         } else {
           this.#actions.set(Actions.moveLeft, -1);
         }
       } else if (button === 'rb' && value === 1) {
-        if (this.#mashed === 1) {this.#mashed = 0;
+        if (this.#mashed === 1) {
+          this.#mashed = 0;
           this.#actions.set(Actions.quickMoveRight, 1);
         } else {
           this.#actions.set(Actions.moveRight, 1);

@@ -17,7 +17,7 @@ export const States = {
   JabFinish: 23,
 };
 
-export const Events = new Set([Commands.HandsUp, Commands.JabPunch]);//////
+export const Events = new Set([Commands.HandsUp, Commands.JabPunch]); /// ///
 
 export const ProcessingOrder = [
   'left-shoulder',
@@ -38,7 +38,7 @@ export const Keyframes = new Map([
     Commands.JabPunch,
     {
       times: [0, 0.6, 0.8, 1.2],
-      //times: [0, 2, 4, 6],
+      // times: [0, 2, 4, 6],
       states: [States.Idle, States.JabStart, States.JabFinish, States.Idle],
     },
   ],
@@ -116,8 +116,8 @@ export const Posings = new Map([
             transform: {
               rotation: {
                 x: (0 / 360) * PI * 2,
-                y: (-90 / 360) * PI * 2,
-                z: (0 / 360) * PI * 2,
+                y: (-70 / 360) * PI * 2,
+                z: (30 / 360) * PI * 2,
               },
             },
           },
@@ -182,7 +182,7 @@ export const Posings = new Map([
               rotation: {
                 x: (10 / 360) * PI * 2,
                 y: (0 / 360) * PI * 2,
-                z: (60 / 360) * PI * 2,
+                z: (30 / 360) * PI * 2,
               },
             },
           },
@@ -195,9 +195,9 @@ export const Posings = new Map([
             key: '.quaternion',
             transform: {
               rotation: {
-                x: (-120 / 360) * PI * 2,
+                x: (-100 / 360) * PI * 2,
                 y: (0 / 360) * PI * 2,
-                z: (150 / 360) * PI * 2,
+                z: (120 / 360) * PI * 2,
               },
             },
           },
@@ -205,5 +205,4 @@ export const Posings = new Map([
       ],
     ]),
   ],
-
 ]);
