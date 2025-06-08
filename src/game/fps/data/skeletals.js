@@ -38,6 +38,7 @@ export const Keyframes = new Map([
     Commands.JabPunch,
     {
       times: [0, 0.6, 0.8, 1.2],
+      //times: [0, 2, 4, 6],
       states: [States.Idle, States.JabStart, States.JabFinish, States.Idle],
     },
   ],
@@ -99,8 +100,8 @@ export const Posings = new Map([
             key: '.quaternion',
             transform: {
               rotation: {
-                x: (30 / 360) * PI * 2,
-                y: (20 / 360) * PI * 2,
+                x: (10 / 360) * PI * 2,
+                y: (30 / 360) * PI * 2,
                 z: (0 / 360) * PI * 2,
               },
             },
@@ -114,8 +115,8 @@ export const Posings = new Map([
             key: '.quaternion',
             transform: {
               rotation: {
-                x: (-110 / 360) * PI * 2,
-                y: (-10 / 360) * PI * 2,
+                x: (0 / 360) * PI * 2,
+                y: (-90 / 360) * PI * 2,
                 z: (0 / 360) * PI * 2,
               },
             },
@@ -179,9 +180,9 @@ export const Posings = new Map([
             key: '.quaternion',
             transform: {
               rotation: {
-                x: (-10 / 360) * PI * 2,
+                x: (10 / 360) * PI * 2,
                 y: (0 / 360) * PI * 2,
-                z: (0 / 360) * PI * 2,
+                z: (60 / 360) * PI * 2,
               },
             },
           },
@@ -194,9 +195,9 @@ export const Posings = new Map([
             key: '.quaternion',
             transform: {
               rotation: {
-                x: (145 / 360) * PI * 2,
+                x: (-120 / 360) * PI * 2,
                 y: (0 / 360) * PI * 2,
-                z: (0 / 360) * PI * 2,
+                z: (150 / 360) * PI * 2,
               },
             },
           },

@@ -203,6 +203,30 @@ export const createSphere = (subtype, name, type, body, offset) => {
       heightSegments,
     );
 
+    if (type === 'joint') {
+      let index, offset, count;
+      const halfWidthSegs = floor(widthSegments * 0.5);
+
+      for (let i = 0; i < heightSegments; i += 1) {
+        if (i === 0) {
+          index = 0;
+          offset = halfWidthSegs;
+          count = halfWidthSegs * 3;
+        } else if (i === heightSegments - 1) {
+          index = (heightSegments - 1) * widthSegments * 2 - widthSegments;
+          offset = halfWidthSegs;
+          count = halfWidthSegs * 3;
+        } else {
+          index = i * widthSegments * 2 - widthSegments;
+          offset = widthSegments;
+          count = widthSegments * 3;
+        }
+
+        geometry.body.addGroup(index * 3, count, 1);
+        geometry.body.addGroup((index + offset) * 3, count, 0);
+      }
+    }
+
     if (wireframe) {
       geometry.wire = new EdgesGeometry(geometry.body);
     }
@@ -292,9 +316,20 @@ export const createSphere = (subtype, name, type, body, offset) => {
   if (caches.material.has(key)) {
     material = caches.material.get(key);
   } else {
-    material.body = new MeshBasicMaterial({
-      color: style.color,
-    });
+    if (type === 'joint') {
+      material.body = [
+        new MeshBasicMaterial({
+          color: style.color,
+        }),
+        new MeshBasicMaterial({
+          color: style.backColor ?? style.color,
+        }),
+      ];
+    } else {
+      material.body = new MeshBasicMaterial({
+        color: style.color,
+      });
+    }
 
     if (wireframe) {
       material.wire = new LineBasicMaterial({
@@ -360,6 +395,34 @@ export const createCapsule = (subtype, name, type, body, offset) => {
     const heightSegments = size.heightSegments ?? 1;
     geometry.body = new CapsuleGeometry(size.radius, size.height, capSegments, radiusSegments, heightSegments);
 
+    if (type === 'arm') {
+      const totalSegs = capSegments * 2 + heightSegments;
+
+      for (let i = 0; i < totalSegs; i += 1) {
+        const index = i * radiusSegments * 2;
+        geometry.body.addGroup(index * 3, radiusSegments * 3, 1);
+        geometry.body.addGroup((index + radiusSegments) * 3, radiusSegments * 3, 0);
+      }
+      /*const headIndex = (capSegments * radiusSegments * 2 + heightSegments * radiusSegments * 2) * 3;
+
+      for (let i = 0; i < capSegments; i += 1) {
+        const index = i * radiusSegments * 2;
+        geometry.body.addGroup(index * 3, radiusSegments * 3, 1);
+        geometry.body.addGroup((index + radiusSegments) * 3, radiusSegments * 3, 0);
+
+        geometry.body.addGroup(headIndex + index * 3, radiusSegments * 3, 1);
+        geometry.body.addGroup(headIndex + (index + radiusSegments) * 3, radiusSegments * 3, 0);
+      }
+
+      const bottomIndices = capSegments * radiusSegments * 2 * 3;
+
+      for (let i = 0; i < heightSegments; i += 1) {
+        const index = i * radiusSegments * 2;
+        geometry.body.addGroup(bottomIndices + index * 3, radiusSegments * 3, 1);
+        geometry.body.addGroup(bottomIndices + (index + radiusSegments) * 3, radiusSegments * 3, 0);
+      }*/
+    }
+
     if (wireframe) {
       geometry.wire = new EdgesGeometry(geometry.body);
     }
@@ -390,7 +453,7 @@ export const createCapsule = (subtype, name, type, body, offset) => {
       );
     }
 
-    if (type === 'joint' || type === 'arm') {
+    if (type === 'arm') {
       geometry.body.rotateX(PI * 0.5);
 
       if (type === 'arm') {
@@ -462,9 +525,20 @@ export const createCapsule = (subtype, name, type, body, offset) => {
   if (caches.material.has(key)) {
     material = caches.material.get(key);
   } else {
-    material.body = new MeshBasicMaterial({
-      color: style.color,
-    });
+    if (type === 'arm') {
+      material.body = [
+        new MeshBasicMaterial({
+          color: style.color,
+        }),
+        new MeshBasicMaterial({
+          color: style.backColor ?? style.color,
+        }),
+      ];
+    } else {
+      material.body = new MeshBasicMaterial({
+        color: style.color,
+      });
+    }
 
     if (wireframe) {
       material.wire = new LineBasicMaterial({

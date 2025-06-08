@@ -124,6 +124,7 @@ export const Characters = [
             ...CommonStyle,
 
             color: 0x007399,
+            backColor: 0x87ceeb, /////////////////////////////////////
             wireColor: 0x004d66,
             pointColor: 0xeb4b2f,
             faceColor: 0xdc143c,
@@ -146,7 +147,7 @@ export const Characters = [
               rotation: {
                 x: (90 / 360) * PI * 2,
                 y: (30 / 360) * PI * 2,
-                z: (0 / 360) * PI * 2,
+                z: (-90 / 360) * PI * 2,
               },
               position: { x: 2, y: 2, z: 0 },
             },
@@ -156,6 +157,7 @@ export const Characters = [
                 ...CommonStyle,
 
                 color: 0x7fffd4,
+                backColor: 0x87ceeb,
                 wireColor: 0x004d66,
                 pointColor: 0xeb4b2f,
               },
@@ -176,7 +178,6 @@ export const Characters = [
               {
                 name: 'left-upper-arm',
                 type: 'arm',
-                //skeletal: { name: 'left-upper-arm', options: { loop: true } },
                 offset: {
                   position: { x: 0, y: 0, z: 1.1 },
                   rotation: {
@@ -191,8 +192,12 @@ export const Characters = [
                     ...CommonStyle,
 
                     color: 0x7fffd4,
+                    backColor: 0x87ceeb,
                     wireColor: 0x004d66,
                     pointColor: 0xeb4b2f,
+                  },
+                  transform: {
+                    //rotation: { z: -PI * 0.5 },
                   },
                   wireframe: true,
                   satellite: true,
@@ -209,11 +214,12 @@ export const Characters = [
                   {
                     name: 'left-elbow',
                     type: 'joint',
+                    skeletal: { name: 'left-elbow', options: { loop: true } },
                     offset: {
                       rotation: {
-                        x: (-135 / 360) * PI * 2,
-                        y: (0 / 360) * PI * 2,
-                        z: (0 / 360) * PI * 2,
+                        x: (0 / 360) * PI * 2,
+                        y: (-135 / 360) * PI * 2,
+                        z: (-105 / 360) * PI * 2,
                       },
                       position: { x: 0, y: 0, z: 1.1 },
                     },
@@ -223,10 +229,11 @@ export const Characters = [
                         ...CommonStyle,
 
                         color: 0x7fffd4,
+                        backColor: 0x87ceeb,
                         wireColor: 0x004d66,
                         pointColor: 0xeb4b2f,
                       },
-                      size: { radius: 0.7, widthSegments: 16, heightSegments: 8 },
+                      size: { radius: 0.7 },
                       wireframe: true,
                       satellite: true,
                       satelliteCap: 'none',
@@ -238,12 +245,10 @@ export const Characters = [
                       size: { radius: 0.7 },
                       // enabled: false,
                     },
-                    skeletal: { name: 'left-elbow', options: { loop: true } },
                     children: [
                       {
                         name: 'left-forearm',
                         type: 'arm',
-                        //skeletal: { name: 'left-forearm', options: { loop: true } },
                         offset: {
                           position: { x: 0, y: 0, z: 1.1 },
                           rotation: {
@@ -258,8 +263,12 @@ export const Characters = [
                             ...CommonStyle,
 
                             color: 0x7fffd4,
+                            backColor: 0x87ceeb,
                             wireColor: 0x004d66,
                             pointColor: 0xeb4b2f,
+                          },
+                          transform: {
+                            //rotation: { z: -PI * 0.5 },
                           },
                           wireframe: true,
                           satellite: true,
@@ -286,14 +295,11 @@ export const Characters = [
                                 ...CommonStyle,
 
                                 color: 0x7fffd4,
+                                backColor: 0x87ceeb,
                                 wireColor: 0x004d66,
                                 pointColor: 0xeb4b2f,
                               },
-                              size: {
-                                radius: 1,
-                                widthSegments: 16,
-                                heightSegments: 8,
-                              },
+                              size: { radius: 1 },
                               wireframe: true,
                               satellite: true,
                               satelliteCap: 'end',
