@@ -19,7 +19,7 @@ import Head from './Head';
 import { ColumnGrid, Row } from './Common';
 import MobilePlayDialog from './MobilePlayDialog';
 
-import Common from '../common.json';
+import Common from '../../common.json';
 import { getNextScene } from '../utils';
 import gameSlice from '../redux/gameSlice';
 

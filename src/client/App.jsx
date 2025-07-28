@@ -13,7 +13,7 @@ import { ThemeProvider, createTheme, styled } from '@mui/material/styles';
 import { Box, CssBaseline } from '@mui/material';
 
 import defaultTheme from './theme';
-import Common from './common.json';
+import Common from '../common.json';
 import LoadingPage from './components/LoadingPage';
 import { isRootPath } from './utils';
 

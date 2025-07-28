@@ -1,4 +1,4 @@
-import Common from './common.json';
+import Common from '../common.json';
 import TupleKeyMap from './game/tuple-key-map';
 
 const { Games, Transitions } = Common;

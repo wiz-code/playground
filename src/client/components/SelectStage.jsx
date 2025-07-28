@@ -16,7 +16,7 @@ import { useTheme } from '@mui/material/styles';
 import Layout from './Layout';
 import Head from './Head';
 
-import Common from '../common.json';
+import Common from '../../common.json';
 import gameSlice from '../redux/gameSlice';
 
 const { actions: gameActions } = gameSlice;
@@ -28,44 +28,44 @@ const AssetPaths = pathMap.get('Assets');
 const assetPaths = new Map(AssetPaths);
 const prefixPath = assetPaths.get('images');
 
-function SelectHero() {
+function SelectStage() {
   const { gameId, scene } = useSelector((state) => state.game);
   const dispatch = useDispatch();
   const theme = useTheme();
 
-  const { name: title, keywords, description, heroes } = gameMap.get(gameId);
+  const { name: title, keywords, description, levels } = gameMap.get(gameId);
   const content = useMemo(
     () => ({ title, keywords, description }),
     [title, keywords, description],
   );
 
   useEffect(() => {
-    dispatch(gameActions.setScene('select-hero'));
+    dispatch(gameActions.setScene('select-stage'));
 
     return () => {
       //
     };
   }, []);
 
-  const setHeroId = useCallback((value) => {
-    dispatch(gameActions.setHeroId(value));
+  const setLevelId = useCallback((value) => {
+    dispatch(gameActions.setLevelId(value));
   }, []);
 
-  console.log('SelectHero:rendererd');
+  console.log('SelectStage:rendererd');
   return (
     <Layout>
       <Head content={content} />
       <Grid container spacing={2} sx={{ justifyContent: 'center' }}>
         <Grid size={12} sx={{ m: theme.spacing(4, 4, 6) }}>
           <Typography variant="h1" align="center">
-            キャラクター選択
+            ステージ選択
           </Typography>
         </Grid>
       </Grid>
       <Grid container spacing={2} sx={{ justifyContent: 'center' }}>
-        {heroes.map((hero) => (
+        {levels.map((level) => (
           <Grid
-            key={hero.id}
+            key={level.id}
             container
             size={4}
             sx={{ my: theme.spacing(1), justifyContent: 'center' }}
@@ -73,29 +73,21 @@ function SelectHero() {
             <Card variant="outlined" sx={{ maxWidth: 300 }}>
               <CardActionArea
                 component={Link}
-                to="/game/stage"
-                state="select-hero"
-                disabled={scene !== 'select-hero'}
-                onClick={() => setHeroId(hero.id)}
+                to="/game/play"
+                state="select-stage"
+                disabled={scene !== 'select-stage'}
+                onClick={() => setLevelId(level.id)}
               >
-                <CardMedia
-                  component="img"
-                  width="192"
-                  height="144"
-                  image={`${prefixPath}/${hero.image}`}
-                  alt={hero.name}
-                  sx={{ p: theme.spacing(0.5) }}
-                />
                 <CardContent>
                   <Typography
                     variant="h5"
                     component="h3"
                     sx={{ mb: theme.spacing(1) }}
                   >
-                    {hero.name}
+                    {level.name}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    {hero.description}
+                    {level.description}
                   </Typography>
                 </CardContent>
               </CardActionArea>
@@ -107,8 +99,8 @@ function SelectHero() {
   );
 }
 
-SelectHero.propTypes = {
+SelectStage.propTypes = {
   //
 };
 
-export default SelectHero;
+export default SelectStage;

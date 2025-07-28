@@ -17,7 +17,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 
 import Setting from './Setting';
 import { GameContext } from './Context';
-import Common from '../common.json';
+import Common from '../../common.json';
 import settingSlice from '../redux/settingSlice';
 import gameSlice from '../redux/gameSlice';
 import Loading from './Loading.jsx';

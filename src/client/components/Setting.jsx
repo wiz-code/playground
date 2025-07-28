@@ -35,7 +35,7 @@ import VolumeDownIcon from '@mui/icons-material/VolumeDown';
 import { ColumnGrid, Row } from './Common';///////////
 import { GameContext } from './Context';
 
-import Common from '../common.json';
+import Common from '../../common.json';
 import settingSlice from '../redux/settingSlice';
 import gameSlice from '../redux/gameSlice';
 import Loading from './Loading.jsx';

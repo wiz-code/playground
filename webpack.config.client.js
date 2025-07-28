@@ -3,7 +3,7 @@ const fs = require('fs');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
 const TerserPlugin = require('terser-webpack-plugin');
-const babelConfig = require('./src/babelrc');
+const babelConfig = require('./src/client/.babelrc');
 
 const json = fs.readFileSync('./src/common.json', 'utf-8');
 const { Meta } = JSON.parse(json);
@@ -16,7 +16,7 @@ const keywordsMap = new Map(Keywords);
 const descriptionMap = new Map(Description);
 
 module.exports = (env, arg) => ({
-  mode: 'development',
+  mode: arg.mode ?? 'development',
 
   devtool: 'inline-source-map',
 
@@ -25,11 +25,11 @@ module.exports = (env, arg) => ({
   },
 
   entry: {
-    app: './src/index.jsx',
+    app: './src/client/index.jsx',
   },
 
   output: {
-    path: path.resolve(__dirname, 'dist'),
+    path: path.resolve(__dirname, 'dist/client'),
     filename: '[name].js',
     clean: true,
   },
@@ -54,11 +54,15 @@ module.exports = (env, arg) => ({
         keywords: keywordsMap.get('App'),
         description: descriptionMap.get('App'),
       },
-      template: './src/html/index.html',
+      filename: path.resolve(__dirname, './dist/client/html/index.html'),
+      template: './src/client/html/index.html',
     }),
     new CopyPlugin({
       patterns: [
-        path.resolve(__dirname, 'assets', '**/*'),
+        {
+          from: 'assets',
+          to: path.resolve(__dirname, 'dist/client/assets'),
+        },
         {
           from: path.resolve(__dirname, 'configs', '**/*'),
           to: '[name]',
@@ -68,7 +72,7 @@ module.exports = (env, arg) => ({
   ],
 
   optimization: {
-    minimize: false,
+    minimize: arg.mode === 'production',
     minimizer: [
       new TerserPlugin(),
     ],
@@ -84,8 +88,7 @@ module.exports = (env, arg) => ({
       'Cross-Origin-Embedder-Policy': 'require-corp',
     },
     static: {
-      directory: path.join(__dirname, 'assets'),
-      publicPath: '/assets',
+      directory: path.join(__dirname, 'dist/client/html'),
     },
     hot: true,
     open: false,

@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-import Common from '../common.json';
+import Common from '../../common.json';
 import { Sound } from '../game/settings';
 
 const { Games, HighFramerateCoef } = Common;

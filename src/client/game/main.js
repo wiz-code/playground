@@ -2,7 +2,7 @@ import { debounce } from 'throttle-debounce';
 import Stats from 'three/addons/libs/stats.module.js';
 
 import { Game as GameSettings } from './settings';
-import Common from '../common.json';
+import Common from '../../common.json';
 import Publisher from './publisher';
 
 import DomEvents from './dom-events';

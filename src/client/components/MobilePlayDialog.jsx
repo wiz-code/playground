@@ -14,7 +14,7 @@ import {
 import { useTheme } from '@mui/material/styles';
 
 import { BasicModalBox } from './Common';
-import Common from '../common.json';
+import Common from '../../common.json';
 import gameSlice from '../redux/gameSlice';
 
 const { actions: gameActions } = gameSlice;

@@ -1,7 +1,7 @@
 {
   "env": {
     "browser": true,
-    "es6": true
+    "es2024": true
   },
   "extends": [
     "airbnb",
@@ -17,7 +17,7 @@
     "globalThis": "readonly"
   },
   "parserOptions": {
-    "ecmaVersion": 2022,
+    "ecmaVersion": 15,
     "ecmaFeatures": {
       "jsx": true
     },

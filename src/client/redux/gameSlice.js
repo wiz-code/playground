@@ -1,6 +1,6 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-import Common from '../common.json';
+import Common from '../../common.json';
 
 const { Games } = Common;
 const games = new Map(Games);

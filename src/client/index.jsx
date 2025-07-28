@@ -5,7 +5,7 @@ import { HelmetProvider } from 'react-helmet-async';
 
 import store from './redux/store';
 import App from './App';
-import Common from './common.json';
+import Common from '../common.json';
 import { MetaContext } from './components/Context';
 
 const { Meta, LastPathSegments } = Common;

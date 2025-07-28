@@ -1,6 +1,6 @@
 import { Spherical, Vector3 /*  */, Euler } from 'three';
 
-import Common from '../../common.json';
+import Common from '../../../common.json';
 import Publisher from '../publisher';
 import { Game } from '../settings';
 import { Controls, Screen, GameColor, InitialDir } from './settings';

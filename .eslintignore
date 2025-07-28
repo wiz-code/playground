@@ -1,5 +1,4 @@
 node_modules/
-public/
 dist/
 test/
-src/old/
+src/client/old/

@@ -1,0 +1,34 @@
+{
+  "env": {
+    "node": true,
+    "es2024": true
+  },
+  "extends": [
+    "eslint:recommended",
+    "airbnb-base",
+    "plugin:prettier/recommended"
+  ],
+  "globals": {
+    "Atomics": "readonly",
+    "SharedArrayBuffer": "readonly"
+  },
+  "parserOptions": {
+    "ecmaVersion": 15,
+    "sourceType": "module"
+  },
+  "settings": {
+    "import/resolver": "webpack"
+  },
+  "rules": {
+    "import/extensions": [
+      "error",
+      "ignorePackages",
+      {
+        "js": "never",
+        "ts": "never",
+        "mjs": "never",
+        "cjs": "never"
+      }
+    ]
+  }
+}
