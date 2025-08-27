@@ -1,0 +1,14 @@
+diff --git a/node_modules/@fails-components/webtransport-transport-http3-quiche/lib/index.js b/node_modules/@fails-components/webtransport-transport-http3-quiche/lib/index.js
+index 533fed2..2061cfa 100644
+--- a/node_modules/@fails-components/webtransport-transport-http3-quiche/lib/index.js
++++ b/node_modules/@fails-components/webtransport-transport-http3-quiche/lib/index.js
+@@ -28,7 +28,8 @@ if (
+ }
+ log('load webtransport binary:', wtpath)
+ 
+-export const wtrouter = require(wtpath)
++// export const wtrouter = require(wtpath) // パッチのためコメントアウトする行
++export const wtrouter = require(path.resolve(__dirname, '../deps/webtransport.node')) // パッチのため挿入する行
+ export const quicheInit = wtrouter.quicheInit
+ 
+ let quicheInited = false

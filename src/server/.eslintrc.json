@@ -17,7 +17,11 @@
     "sourceType": "module"
   },
   "settings": {
-    "import/resolver": "webpack"
+    "import/resolver": {
+      "webpack": {
+        "config": "./webpack.config.server.js"
+      }
+    }
   },
   "rules": {
     "import/extensions": [

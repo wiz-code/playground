@@ -1,6 +1,7 @@
 const path = require('node:path');
 const TerserPlugin = require('terser-webpack-plugin');
 const CopyPlugin = require("copy-webpack-plugin");
+const Dotenv = require('dotenv-webpack');
 const babelConfig = require('./src/server/.babelrc.js');
 
 module.exports = (env, arg) => ({
@@ -27,7 +28,9 @@ module.exports = (env, arg) => ({
     rules: [
       {
         test: /\.js$/,
-        exclude: /node_modules/,
+        exclude: /node_modules(?!\/@fails-components\/webtransport)/,
+        //exclude: /node_modules/,
+        include: /node_modules(?=\/@fails-components\/webtransport)/,
         use: {
           loader: 'babel-loader',
         },
@@ -36,6 +39,7 @@ module.exports = (env, arg) => ({
   },
 
   plugins: [
+    new Dotenv(),
     new CopyPlugin({
       patterns: [
         {
@@ -55,6 +59,9 @@ module.exports = (env, arg) => ({
   },
 
   resolve: {
-    extensions: ['.js', 'cjs', 'mjs'],
+    alias: {
+      '@lib': path.resolve(__dirname, '../../lib'),
+    },
+    extensions: ['.js', '.cjs', '.mjs'],
   },
 });

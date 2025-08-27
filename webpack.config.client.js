@@ -3,6 +3,7 @@ const fs = require('fs');
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const CopyPlugin = require("copy-webpack-plugin");
 const TerserPlugin = require('terser-webpack-plugin');
+const Dotenv = require('dotenv-webpack');
 const babelConfig = require('./src/client/.babelrc');
 
 const json = fs.readFileSync('./src/common.json', 'utf-8');
@@ -48,6 +49,7 @@ module.exports = (env, arg) => ({
   },
 
   plugins: [
+    new Dotenv(),
     new HtmlWebpackPlugin({
       title: siteName,
       meta: {
@@ -79,6 +81,9 @@ module.exports = (env, arg) => ({
   },
 
   resolve: {
+    alias: {
+      '@lib': path.resolve(__dirname, '../../lib'),
+    },
     extensions: ['.js', '.jsx'],
   },
 

@@ -7,6 +7,7 @@ import cookieParser from 'cookie-parser';
 import logger from 'morgan';
 
 import pug from 'pug';
+
 const app = express();
 
 app.set('view engine', 'pug');
@@ -15,7 +16,9 @@ app.engine('pug', pug.__express);
 
 app.use(express.static(path.join(__dirname, '../client')));
 
-app.use(favicon(path.resolve(__dirname, '../client/assets/images/favicon.ico')));
+app.use(
+  favicon(path.resolve(__dirname, '../client/assets/images/favicon.ico')),
+);
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
@@ -23,8 +26,9 @@ app.use(express.raw({ limit: '1000kb' }));
 app.use(cookieParser());
 
 app.get('/', (req, res, next) => {
+  console.log('/', req.host);
   res.sendFile(path.resolve(__dirname, '../client/html/index.html'));
-  //res.render('index');
+  // res.render('index');
 });
 
 // catch 404 and forward to error handler

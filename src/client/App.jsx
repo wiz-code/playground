@@ -13,6 +13,7 @@ import { ThemeProvider, createTheme, styled } from '@mui/material/styles';
 import { Box, CssBaseline } from '@mui/material';
 
 import defaultTheme from './theme';
+import { WtContext } from './components/Context';
 import Common from '../common.json';
 import LoadingPage from './components/LoadingPage';
 import { isRootPath } from './utils';
@@ -23,14 +24,6 @@ const GamePage = lazy(() => import('./components/GamePage'));
 const theme = createTheme(defaultTheme);
 
 function App({ pathname, lastSegment }) {
-  useEffect(() => {
-    //
-
-    return () => {
-      //
-    };
-  }, []);
-
   const router = createBrowserRouter(
     createRoutesFromElements(
       <Route>
