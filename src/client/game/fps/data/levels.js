@@ -138,8 +138,8 @@ const Levels = [
                     rotation: { x: 0, y: 0, z: 0 },
                   },
                   {
-                    widthSegments: 50,
-                    depthSegments: 50,
+                    widthSegments: 100,
+                    depthSegments: 100,
                     bumpHeight: 0.3, // 0.45,
                     position: { x: 0, y: -5, z: 0 },
                     rotation: { x: 0, y: 0, z: 0 },

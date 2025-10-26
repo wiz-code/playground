@@ -9,7 +9,7 @@
   "scripts": {
     "lint:client": "eslint src/client -c src/client/.eslintrc.json --fix",
     "lint:server": "eslint src/server -c src/server/.eslintrc.json --fix",
-    "dev": "webpack serve",
+    "dev": "nodemon dist/server/index.js",
     "build-dev:client": "webpack -c ./webpack.config.client.js",
     "build-dev:server": "webpack -c ./webpack.config.server.js",
     "build:client": "webpack --mode production -c ./webpack.config.client.js",
@@ -39,7 +39,7 @@
     "react-router-dom": "^6.28.0",
     "regenerator-runtime": "^0.14.1",
     "serve-favicon": "^2.5.1",
-    "three": "0.176.0",
+    "three": "^0.178.0",
     "three-bvh-csg": "^0.0.16",
     "three-mesh-bvh": "0.7.6",
     "throttle-debounce": "^5.0.2"
@@ -63,6 +63,7 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "html-webpack-plugin": "^5.5.4",
     "jest": "^29.7.0",
+    "nodemon": "^3.1.10",
     "patch-package": "^8.0.0",
     "postinstall-postinstall": "^2.1.0",
     "prettier": "^3.1.1",

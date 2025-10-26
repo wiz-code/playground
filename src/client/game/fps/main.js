@@ -3,15 +3,14 @@ import {
   FogExp2,
   PerspectiveCamera,
   OrthographicCamera,
-  WebGLRenderer,
   Color,
   AmbientLight,
   Texture,
   SRGBColorSpace,
 } from 'three';
-// import { WebGPURenderer } from 'three/webgpu';
 
 import { Game as GameSettings } from '../settings';
+import Common from '../../../common.json';
 import { Scene, Camera, World, Light } from './settings';
 import FirstPersonControls from './controls';
 import GamepadControls from './gamepad.controls';
@@ -31,13 +30,14 @@ import EventManager from './event-manager';
 import MovableManager from './movable-manager';
 import GridProcessor from './grid-processor';
 import Movable from './movable';
-import Loop from '../async-loop'; /// //////////
+import Loop from '../async-loop';
 
 import { offsetPosition, disposeObject } from './utils';
 
 const { floor, round, min, exp } = Math;
 const levelMap = new Map(Levels);
 
+const { SharedDataIndex } = Common;
 const { baseResistance } = World;
 const resistances = Object.entries(World.Resistance);
 const dampingData = {};
@@ -61,11 +61,15 @@ class WorkerMain {
 
   #startTime = 0;
 
+  #prevTime = 0;
+
   #elapsedTime = 0;
 
   #frameCount = 0;
 
   #mainUpdated = null;
+
+  #sab = null;
 
   constructor(data, params) {
     const { canvas, width, height, sab, imageBitmap } = data;
@@ -83,17 +87,9 @@ class WorkerMain {
     this.canvas = canvas;
     this.canvas.style = { width: 0, height: 0 };
 
-    this.renderer = new WebGLRenderer({
-      canvas: this.canvas,
-      antialias: false,
-      preserveDrawingBuffer: true,
-    });
+    this.sceneManager = new SceneManager(this.canvas, this.params);
 
-    this.renderer.autoClear = false;
-    this.renderer.setClearColor(new Color(0x000000));
-    this.renderer.setPixelRatio(this.params.devicePixelRatio);
-
-    this.sab = sab;
+    this.#sab = sab;
 
     this.data = {};
 
@@ -115,8 +111,6 @@ class WorkerMain {
 
     this.pendingList = [];
     this.cache = { controls: null };
-
-    this.sceneManager = new SceneManager(this.renderer);
 
     this.scene = {};
     this.camera = {};
@@ -188,11 +182,7 @@ class WorkerMain {
     this.init();
 
     this.update = this.update.bind(this);
-    this.loop = new Loop(
-      this.update,
-      this.params.crossOriginIsolated && this.params.canUseWaitAsync,
-      this.sab != null ? this.sab.waitWorker : null,
-    );
+    this.loop = new Loop(this.update);
   }
 
   async init() {
@@ -261,7 +251,8 @@ class WorkerMain {
         this.camera.screen.updateProjectionMatrix();
 
         this.controls.handleResize(width, height);
-        this.renderer.setSize(width, height, false);
+        //this.renderer.setSize(width, height, false);
+        this.sceneManager.setSize(width, height);
         this.sceneManager.update();
 
         if (self.promiseList.has('request-resize')) {
@@ -523,7 +514,7 @@ class WorkerMain {
       this.objectManager.add(enemy);
     }
 
-    for (let i = 0; i < 2 /* 100 */; i += 1) {
+    for (let i = 0; i < 20; i += 1) {
       const rx = Math.random() * 20 - 10;
       const rz = Math.random() * 40 - 10;
 
@@ -641,7 +632,8 @@ class WorkerMain {
     this.scene.field.clear();
     this.scene.screen.clear();
 
-    this.renderer.dispose();
+    //this.renderer.dispose();
+    this.sceneManager.dispose();
     self.close();
   }
 
@@ -692,48 +684,50 @@ class WorkerMain {
 
     const { framerateCoef, crossOriginIsolated, canUseWaitAsync } = this.params;
 
-    if (crossOriginIsolated && canUseWaitAsync) {
-      /// ////////
-      if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
-        return Atomics.notify(this.sab.waitWorker, 0);
-      }
-    } else if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
+    if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
       return Promise.resolve();
     }
 
+    this.#prevTime = this.#elapsedTime;
+    const currentTime = performance.now() * 0.001;
+    this.#elapsedTime = currentTime - this.#startTime;
+
     if (crossOriginIsolated && canUseWaitAsync) {
-      Atomics.notify(this.sab.waitMain, 0);
-      this.updateWorker();
+      const wait = Atomics.waitAsync(this.#sab.waitWorker, 0, 0);
+      this.#sab.data[SharedDataIndex.frameCount] = this.#frameCount;
+      this.#sab.data[SharedDataIndex.time] = this.#elapsedTime;
+    
+      Atomics.notify(this.#sab.waitMain, 0);
+      await wait.value;
     } else {
-      self.postMessage({ type: 'update' });
+      self.postMessage({ type: 'update', value: [this.#frameCount, this.#elapsedTime] });
 
       const { promise, resolve } = Promise.withResolvers();
       this.#mainUpdated = resolve;
-
-      this.updateWorker();
-      return promise;
+      await this.#mainUpdated;
     }
+
+    this.updateWorker();
+    return Promise.resolve();
   }
 
   updateWorker() {
-    const { crossOriginIsolated } = this.params;
+    const { crossOriginIsolated, canUseWaitAsync } = this.params;
 
     if (crossOriginIsolated) {
       if (this.#gamepadIndex !== -1) {
-        const { buttons, axes } = this.sab;
+        const { buttons, axes } = this.#sab;
         this.controls.input(buttons, axes);
       } else {
-        this.controls.handleEvents(this.sab.pointerValues, this.sab.keyValues);
-        this.sab.pointerValues.fill(0);
-        this.sab.keyValues.fill(0);
+        this.controls.handleEvents(this.#sab.pointerValues, this.#sab.keyValues);
+        this.#sab.pointerValues.fill(0);
+        this.#sab.keyValues.fill(0);
 
         this.controls.input();
       }
     }
 
-    let elapsedTime = this.#elapsedTime;
-    const currentTime = performance.now() * 0.001;
-    this.#elapsedTime = currentTime - this.#startTime;
+    let elapsedTime = this.#prevTime;
 
     const deltaTime = this.#elapsedTime - elapsedTime;
     const additional = round(deltaTime / GameSettings.FPS60);
@@ -754,21 +748,10 @@ class WorkerMain {
       this.objectManager.update(delta, elapsedTime, damping, i, stepsPerFrame);
     }
 
-    this.sceneManager.update();
+    this.sceneManager.update(deltaTime);
     // this.helper.update();
 
     this.game.states.set('time', this.#elapsedTime);
-
-    if (!crossOriginIsolated) {
-      if (this.#frameCount % GameSettings.SkipFrames === 0) {
-        self.postMessage({
-          type: 'set-elapsed-time',
-          value: this.#elapsedTime,
-        });
-      }
-    } else {
-      this.sab.time[0] = this.#elapsedTime;
-    }
   }
 }
 

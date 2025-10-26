@@ -16,6 +16,8 @@ const {
   PointerEventSize,
   ButtonSize,
   AxisSize,
+  SharedDataSize,
+  SharedDataIndex,
   HighFramerateCoef,
 } = Common;
 
@@ -35,6 +37,8 @@ class Game extends Publisher {
   #gamepadIndex = -1;
 
   #frameCount = 0;
+
+  #elapsedTime = 0;
 
   #statsEnabled = true;
 
@@ -70,14 +74,14 @@ class Game extends Publisher {
       const sabKeyValues = new SharedArrayBuffer(KeyEventSize * 4);
       const sabButtons = new SharedArrayBuffer(ButtonSize * 4);
       const sabAxes = new SharedArrayBuffer(AxisSize * 4);
-      const sabTime = new SharedArrayBuffer(4);
+      const sabData = new SharedArrayBuffer(SharedDataSize * 4);
 
       this.#sab = {
         pointerValues: new Float32Array(sabPointerValues),
         keyValues: new Float32Array(sabKeyValues),
         buttons: new Float32Array(sabButtons),
         axes: new Float32Array(sabAxes),
-        time: new Float32Array(sabTime),
+        data: new Float32Array(sabData),
 
         waitMain: null,
         waitWorker: null,
@@ -118,13 +122,6 @@ class Game extends Publisher {
       sab: this.#sab,
     };
 
-    /* this.update = this.update.bind(this);
-    this.loop = new Loop(
-      this.update,
-      crossOriginIsolated && canUseWaitAsync,
-      this.#sab != null ? this.#sab.waitMain : null,
-    ); */
-
     this.init(data);
   }
 
@@ -143,7 +140,7 @@ class Game extends Publisher {
 
     imageBitmap = null;
 
-    this.domEvents = new DomEvents(this.canvas, this.worker);
+    this.domEvents = new DomEvents(this.canvas);
     this.domEvents.subscribe('dom-event', this.onEventDispatched.bind(this));
 
     // this.decoder = new TextDecoder();
@@ -233,11 +230,6 @@ class Game extends Publisher {
           break;
         }
 
-        case 'set-elapsed-time': {
-          this.callbacks.setElapsedTime(event.data.value);
-          break;
-        }
-
         case 'play-sound': {
           const [name, delay] = event.data.value;
           this.audioManager.play(name, 'sfx', delay);
@@ -302,7 +294,8 @@ class Game extends Publisher {
         }
 
         case 'update': {
-          this.update();
+          const [frameCount, time] = event.data.value;
+          this.update(frameCount, time);
           break;
         }
 
@@ -321,7 +314,7 @@ class Game extends Publisher {
     const { crossOriginIsolated, canUseWaitAsync } = this.params;
 
     if (crossOriginIsolated && canUseWaitAsync) {
-      this.awaitMain();
+      this.update();
     }
   }
 
@@ -446,21 +439,40 @@ class Game extends Publisher {
     this.worker.postMessage({ type: 'send-param', value: [name, value] });
   }
 
-  async awaitMain() {
-    const wait = Atomics.waitAsync(this.#sab.waitMain, 0, 0);
-    await wait.value;
+  async update(frameCount, time) {
+    const { crossOriginIsolated, canUseWaitAsync } = this.params;
 
-    this.update();
-  }
+    if (crossOriginIsolated && canUseWaitAsync) {
+      const wait = Atomics.waitAsync(this.#sab.waitMain, 0, 0);
+      const state = await wait.value;
 
-  update() {
-    this.#frameCount += 1;
+      this.#frameCount = this.#sab.data[SharedDataIndex.frameCount];
+      this.#elapsedTime = this.#sab.data[SharedDataIndex.time];
+    } else {
+      this.#frameCount = frameCount;
+      this.#elapsedTime = time;
+    }
 
     if (this.#statsEnabled) {
       this.stats.update();
     }
 
-    const { framerateCoef, crossOriginIsolated, canUseWaitAsync } = this.params;
+    if (this.#frameCount % GameSettings.SkipFrames === 0) {
+      this.callbacks.setElapsedTime(this.#elapsedTime);
+    }
+
+    this.updateMain();
+
+    if (crossOriginIsolated && canUseWaitAsync) {
+      this.update();
+      Atomics.notify(this.#sab.waitWorker, 0);
+    } else {
+      this.worker.postMessage({ type: 'main-updated' });
+    }
+  }
+
+  updateMain() {
+    const { crossOriginIsolated, canUseWaitAsync } = this.params;
 
     if (this.#gamepadIndex !== -1) {
       const gamepads = window.navigator.getGamepads();
@@ -488,21 +500,6 @@ class Game extends Publisher {
       );
       this.pointerValues = new Float32Array(PointerEventSize);
       this.keyValues = new Float32Array(KeyEventSize);
-    }
-
-    if (
-      crossOriginIsolated &&
-      this.#frameCount % GameSettings.SkipFrames === 0
-    ) {
-      const [time] = this.#sab.time;
-      this.callbacks.setElapsedTime(time);
-    }
-
-    if (!(crossOriginIsolated && canUseWaitAsync)) {
-      this.worker.postMessage({ type: 'main-updated' });
-    } else {
-      this.awaitMain();
-      Atomics.notify(this.#sab.waitWorker, 0);
     }
   }
 }

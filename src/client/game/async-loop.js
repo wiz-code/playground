@@ -3,22 +3,13 @@ class Loop {
 
   #running = false;
 
-  constructor(callback, waitAsync = false, sab = null) {
+  constructor(callback) {
     this.callback = callback;
-    this.waitAsync = waitAsync;
-    this.sab = sab;
-
     this.loop = this.loop.bind(this);
   }
 
   async loop(time) {
-    if (!this.waitAsync) {
-      await this.callback(time);
-    } else {
-      const wait = Atomics.waitAsync(this.sab, 0, 0);
-      this.callback(time);
-      await wait.value;
-    }
+    await this.callback(time);
 
     if (this.#running) {
       requestAnimationFrame(this.loop);

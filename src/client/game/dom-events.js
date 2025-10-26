@@ -6,15 +6,11 @@ const onContextmenu = (event) => {
 };
 
 class DomEvents extends Publisher {
-  #moveX = 0;
 
-  #moveY = 0;
-
-  constructor(domElement, worker) {
+  constructor(domElement) {
     super();
 
     this.domElement = domElement;
-    this.worker = worker;
     this.gamepadEnabled = false;
 
     this.onWheel = this.onWheel.bind(this);
@@ -37,8 +33,8 @@ class DomEvents extends Publisher {
       this.domElement.addEventListener('pointermove', this.onPointerMove);
       this.domElement.addEventListener('pointerup', this.onPointerUp);
 
-      document.addEventListener('keydown', this.onKeyDown);
-      document.addEventListener('keyup', this.onKeyUp);
+      document.body.addEventListener('keydown', this.onKeyDown);
+      document.body.addEventListener('keyup', this.onKeyUp);
     }
   }
 
@@ -51,8 +47,8 @@ class DomEvents extends Publisher {
       this.domElement.removeEventListener('pointermove', this.onPointerMove);
       this.domElement.removeEventListener('pointerup', this.onPointerUp);
 
-      document.removeEventListener('keydown', this.onKeyDown);
-      document.removeEventListener('keyup', this.onKeyUp);
+      document.body.removeEventListener('keydown', this.onKeyDown);
+      document.body.removeEventListener('keyup', this.onKeyUp);
     }
   }
 
@@ -83,7 +79,7 @@ class DomEvents extends Publisher {
   }
 
   onPointerDown(event) {
-    this.lock(); // 開発中はコメントアウト
+    //this.lock(); // 開発中はコメントアウト
     this.publish('dom-event', 'pointer-down', event.button);
   }
 
