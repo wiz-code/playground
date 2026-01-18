@@ -6059,6 +6059,11 @@ levn@^0.4.1:
     prelude-ls "^1.2.1"
     type-check "~0.4.0"
 
+lil-gui@^0.21.0:
+  version "0.21.0"
+  resolved "https://registry.yarnpkg.com/lil-gui/-/lil-gui-0.21.0.tgz#c5cbd074b69f0e2aee3ba13e07affe2def21ad09"
+  integrity sha512-tpvxN7v1GvE/Tv+GRopfOp0W7fVEjF4PltkuX8vOCIfim22rD1ztvfkoEMcv9lzQeuNUSeIrUmUjBwmlW/oUew==
+
 lines-and-columns@^1.1.6:
   version "1.2.4"
   resolved "https://registry.yarnpkg.com/lines-and-columns/-/lines-and-columns-1.2.4.tgz#eca284f75d2965079309dc0ad9255abb2ebc1632"

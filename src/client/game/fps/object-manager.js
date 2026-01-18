@@ -9,7 +9,8 @@ import SweepAndPrune from './sap';
 import {
   triangleCapsuleIntersect,
   triangleSphereIntersect,
-  lineToLineClosestPoints,
+  //lineToLineClosestPoints,
+  closestPointsSegmentToSegment,
 } from './utils';
 
 const { sqrt, cos, PI } = Math;
@@ -137,6 +138,16 @@ class ObjectManager extends Publisher {
     this.list.forEach((object) => object.setAlive(bool));
   }
 
+  getObjectByName(name) {
+    for (const object of this.list.keys()) {
+      if (name === object.name) {
+        return object;
+      }
+    }
+
+    return null;
+  }
+
   dispose() {
     this.list.forEach((object) => {
       this.remove(object);
@@ -167,8 +178,7 @@ class ObjectManager extends Publisher {
   }
 
   #collisionWithTerrain(object, geometry, refitSet, movableList) {
-    const { type, collidable } = object;
-    const { velocity } = collidable;
+    const { type, collidable, position, velocity } = object;
     this.#move.set(0, 0, 0);
 
     if (type === 'character') {
@@ -202,7 +212,7 @@ class ObjectManager extends Publisher {
         intersectsBounds,
       };
 
-      if (collider.type === 'capsule') {
+      if (collider.shape === 'capsule') {
         collider.copyTo(this.#capsule);
 
         const intersectsTriangle = (triangle, triangleIndex, a, depth) => {
@@ -244,7 +254,7 @@ class ObjectManager extends Publisher {
         callbacks.intersectsRange = intersectsRange;
 
         geometry.boundsTree.shapecast(callbacks);
-      } else if (collider.type === 'sphere') {
+      } else if (collider.shape === 'sphere') {
         this.#sphere.copy(collider.getBounds());
 
         const intersectsTriangle = (triangle) => {
@@ -260,7 +270,7 @@ class ObjectManager extends Publisher {
         callbacks.intersectsTriangle = intersectsTriangle;
 
         geometry.boundsTree.shapecast(callbacks);
-      } else if (collider.type === 'aabb') {
+      } else if (collider.shape === 'aabb') {
         this.#box.getBoundingSphere(this.#sphere);
 
         geometry.boundsTree.shapecast({
@@ -333,6 +343,7 @@ class ObjectManager extends Publisher {
       }
     });
 
+    object.position.add(this.#move);
     collidable.traverse(({ collider }) => {
       collider.moveBy(this.#move);
       this.sap.updateObject(collider);
@@ -343,14 +354,14 @@ class ObjectManager extends Publisher {
     const { states } = this.game;
     this.#move1.set(0, 0, 0);
     this.#move2.set(0, 0, 0);
-    const { velocity: av1 } = a1.collidable;
-    const { velocity: av2 } = a2.collidable;
+    const { velocity: av1 } = a1;
+    const { velocity: av2 } = a2;
 
-    a1.collidable.traverse(({ collider: ca1, velocity: v1 }) => {
+    a1.collidable.traverse(({ name: n1, collider: ca1, velocity: v1 }) => {
       if (ca1.isEnabled()) {
-        a2.collidable.traverse(({ collider: ca2, velocity: v2 }) => {
+        a2.collidable.traverse(({ name: n2, collider: ca2, velocity: v2 }) => {
           if (ca2.isEnabled()) {
-            if (ca1.type === 'capsule' && ca2.type === 'capsule') {
+            if (ca1.shape === 'capsule' && ca2.shape === 'capsule') {
               let collided = false;
 
               const la1 = this.#l1.set(
@@ -361,7 +372,8 @@ class ObjectManager extends Publisher {
                 ca2.getProp('start'),
                 ca2.getProp('end'),
               );
-              lineToLineClosestPoints(la1, la2, this.#t1, this.#t2);
+              //lineToLineClosestPoints(la1, la2, this.#t1, this.#t2);
+              closestPointsSegmentToSegment(la1, la2, this.#t1, this.#t2);
               this.#vecA.subVectors(this.#t1, this.#t2);
               const len = this.#vecA.length();
               const normal = this.#vecA.normalize();
@@ -395,7 +407,7 @@ class ObjectManager extends Publisher {
                     this.eventManager.dispatch('collision', a1.name, a1, a2);
                     this.eventManager.dispatch('collision', a2.name, a2, a1);
                   } */
-            } else if (ca1.type === 'capsule') {
+            } else if (ca1.shape === 'capsule') {
               let collided = false;
 
               this.#l1.set(ca1.getProp('start'), ca1.getProp('end'));
@@ -431,9 +443,9 @@ class ObjectManager extends Publisher {
                   const diff = this.#vecF.copy(normal).multiplyScalar(depth);
                   this.#move1.add(diff);
 
-                  if (ca2.type === 'sphere') {
+                  if (ca2.shape === 'sphere') {
                     this.#move2.add(normal.multiplyScalar(-depth));
-                  } else if (ca2.type === 'aabb') {
+                  } else if (ca2.shape === 'aabb') {
                     this.#move2.add(diff.negate()); /// //////////
                   }
                 }
@@ -461,7 +473,7 @@ class ObjectManager extends Publisher {
                       }
                     } */
               }
-            } else if (ca2.type === 'capsule') {
+            } else if (ca2.shape === 'capsule') {
               let collided = false;
 
               this.#l2.set(ca2.getProp('start'), ca2.getProp('end'));
@@ -497,9 +509,9 @@ class ObjectManager extends Publisher {
                   const diff = this.#vecF.copy(normal).multiplyScalar(depth);
                   this.#move2.add(diff);
 
-                  if (ca1.type === 'sphere') {
+                  if (ca1.shape === 'sphere') {
                     this.#move1.add(normal.multiplyScalar(-depth));
-                  } else if (ca2.type === 'aabb') {
+                  } else if (ca2.shape === 'aabb') {
                     this.#move1.add(diff.negate()); /// //////////
                   }
                 }
@@ -567,16 +579,16 @@ class ObjectManager extends Publisher {
                 this.#move1.addScaledVector(normal, d);
                 this.#move2.addScaledVector(normal, -d);
 
-                if (ca1.type === 'sphere') {
+                if (ca1.shape === 'sphere') {
                   this.#move1.addScaledVector(normal, d);
-                } else if (ca1.type === 'aabb') {
+                } else if (ca1.shape === 'aabb') {
                   this.#vecF.copy(normal).multiplyScalar(d);
                   this.#move1.add(this.#vecF);
                 }
 
-                if (ca2.type === 'sphere') {
+                if (ca2.shape === 'sphere') {
                   this.#move2.addScaledVector(normal, -d);
-                } else if (ca2.type === 'aabb') {
+                } else if (ca2.shape === 'aabb') {
                   this.#vecF.copy(normal).multiplyScalar(-d);
                   this.#move2.add(this.#vecF);
                 }
@@ -590,9 +602,11 @@ class ObjectManager extends Publisher {
       }
     });
 
+    a1.position.add(this.#move1);
     a1.collidable.traverse(({ collider }) => {
       collider.moveBy(this.#move1);
     });
+    a2.position.add(this.#move2);
     a2.collidable.traverse(({ collider }) => {
       collider.moveBy(this.#move2);
     });
@@ -615,28 +629,6 @@ class ObjectManager extends Publisher {
       }
     }
   }
-
-  /* collisions() {
-    const list = Array.from(this.list.keys());
-    const { refitSet, geometry, list: movableList } = this.movableManager;
-
-    for (const object of this.list) {
-      if (object.isAlive()) {
-        this.#collisionWithTerrain(object, geometry, refitSet, movableList);
-      }
-    }
-
-    for (let i = 0, l = list.length - 1; i < l; i += 1) {
-      for (let j = i + 1; j < l + 1; j += 1) {
-        const a1 = list[i];
-        const a2 = list[j];
-
-        if (a1.isAlive() && a2.isAlive()) {
-          this.#collisionWithObject(a1, a2);
-        }
-      }
-    }
-  } */
 
   update(deltaTime, elapsedTime, damping, currentStep, steps) {
     const list = Array.from(this.list.keys());

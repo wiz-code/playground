@@ -13,14 +13,14 @@ export const Scene = {
   Fog: {
     color: 0x111111,
     near: 60,
-    far: 600,
-    density: 0.004,
+    far: 300,//100,
+    density: 0.02,//0.004,
   },
 };
 export const Camera = {
   FOV: 68,
-  near: 1,
-  far: 400,
+  near: 0.1,//1,
+  far: 200,//400,
   order: 'YXZ',
 };
 
@@ -39,7 +39,7 @@ export const Light = {
 };
 
 export const Grid = {
-  color: 0x4d7399,
+  color: 0x71acc4,//0x4d7399,
 };
 
 export const Axis = {
@@ -79,7 +79,7 @@ export const Column = {
 
 export const Controls = {
   idleTime: 0.3,
-  restoreSpeed: 12, // 8,
+  restoreSpeed: 12,
   restoreMinAngle: PI * 2 * (0.2 / 360),
 
   pointerMaxMove: 100,
@@ -92,13 +92,13 @@ export const Controls = {
   verticalAngleLimit: 80,
 
   lookSpeed: 135,
-  stickMomentum: 16, // 18,
+  stickMomentum: 16,
   momentum: 10,
 };
 
 export const World = {
   oob: -240,
-  gravity: 300,
+  gravity: 100, //300,
   baseResistance: -6,
   Resistance: {
     ground: 1,
@@ -106,15 +106,16 @@ export const World = {
     spin: 5,
     ammo: 0.2,
     obstacle: 1 / 60,
-    item: 0.4, // 2 / 3,
+    item: 0.4,
   },
   collisionShock: 0.8,
-  pointSize: 1.5, // 1.6, // 2,
-  spacing: 12.5, // 12, // 16,
+  pointSize: 0.5, //1.5,
+  pointOffset: 0.2, //0.7,
+  spacing: 3.6, //12.5,
   fallingDeathDistance: 145,
 
-  urgencyDuration: 0.1, // 0.1,
-  stunningDuration: 0.3, // 0.2
+  urgencyDuration: 0.1,
+  stunningDuration: 0.3,
 
   urgencyTurnDuration: 0.3,
   stunningTurnDuration: 0.1,
@@ -137,7 +138,8 @@ export const Screen = {
   verticalFrameSize: 384,
   gaugeHeight: 384 * 0.75 - 14,
   arrowColor: 0x2cbbce,
-  arrowSize: { width: 2, height: 4 },
+  //arrowSize: { width: 2, height: 4 },
+  arrowSize: { width: 0.4, height: 0.8 },
 };
 
 export const GameColor = {

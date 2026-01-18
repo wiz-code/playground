@@ -1,8 +1,10 @@
+import { Parts } from '../constants';
+
 const { PI } = Math;
 
-export const Commands = {
-  HandsUp: 0,
-  JabPunch: 1,
+export const Clips = {
+  HandsUp: 'hands-up',
+  JabPunch: 'jab-punch',
 };
 
 export const States = {
@@ -17,78 +19,54 @@ export const States = {
   JabFinish: 23,
 };
 
-export const Events = new Set([Commands.HandsUp, Commands.JabPunch]); /// ///
+export const Events = new Set([Clips.HandsUp, Clips.JabPunch]); /// ///
 
-export const ProcessingOrder = [
-  'left-shoulder',
-  'right-shoulder',
-  'left-elbow',
-  'right-elbow',
-];
-
-export const Keyframes = new Map([
+export const AnimationClips = new Map([
   [
-    Commands.HandsUp,
+    Clips.JabPunch,
     {
-      times: [0, 2, 6],
-      states: [States.Idle, States.HandsUpStart, States.HandsUpFinish],
-    },
-  ],
-  [
-    Commands.JabPunch,
-    {
-      times: [0, 0.6, 0.8, 1.2],
-      // times: [0, 2, 4, 6],
-      states: [States.Idle, States.JabStart, States.JabFinish, States.Idle],
+      parts: [Parts.Body, Parts.LeftShoulder, Parts.LeftElbow],
+      relative: false,////////////
+      keyframes: [
+        {
+          state: States.Idle,
+          time: 0,
+          
+        },
+        {
+          state: States.JabStart,
+          time: 0.6,
+        },
+        {
+          state: States.JabImpact,
+          time: 0.8,
+        },
+        {
+          state: States.JabFinish,
+          time: 1.0,
+        },
+        {
+          state: States.Idle,
+          time: 1.4,
+        },
+      ],
     },
   ],
 ]);
 
-export const Posings = new Map([
+export const KeyPoses = new Map([
   [
-    'left-shoulder',
+    Parts.Body,
     new Map([
       [
         States.Idle,
         [
           {
             key: '.quaternion',
-            transform: {
-              rotation: {
-                x: (0 / 360) * PI * 2,
-                y: (0 / 360) * PI * 2,
-                z: (0 / 360) * PI * 2,
-              },
-            },
-          },
-        ],
-      ],
-      [
-        States.HandsUpStart,
-        [
-          {
-            key: '.quaternion',
-            transform: {
-              rotation: {
-                x: (0 / 360) * PI * 2,
-                y: (105 / 360) * PI * 2,
-                z: (0 / 360) * PI * 2,
-              },
-            },
-          },
-        ],
-      ],
-      [
-        States.HandsUpFinish,
-        [
-          {
-            key: '.quaternion',
-            transform: {
-              rotation: {
-                x: (0 / 360) * PI * 2,
-                y: (0 / 360) * PI * 2,
-                z: (0 / 360) * PI * 2,
-              },
+            value: {
+              x: (0 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,
             },
           },
         ],
@@ -98,12 +76,13 @@ export const Posings = new Map([
         [
           {
             key: '.quaternion',
-            transform: {
-              rotation: {
-                x: (10 / 360) * PI * 2,
-                y: (30 / 360) * PI * 2,
-                z: (0 / 360) * PI * 2,
-              },
+            value: {
+              x: (0 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,
+              /*x: (0 / 360) * PI * 2,
+              y: (15 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,*/
             },
           },
         ],
@@ -113,12 +92,13 @@ export const Posings = new Map([
         [
           {
             key: '.quaternion',
-            transform: {
-              rotation: {
-                x: (0 / 360) * PI * 2,
-                y: (-70 / 360) * PI * 2,
-                z: (30 / 360) * PI * 2,
-              },
+            value: {
+              /*x: (0 / 360) * PI * 2,
+              y: (-30 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,*/
+              x: (0 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,
             },
           },
         ],
@@ -126,19 +106,20 @@ export const Posings = new Map([
     ]),
   ],
   [
-    'left-elbow',
+    Parts.LeftShoulder,
     new Map([
       [
         States.Idle,
         [
           {
             key: '.quaternion',
-            transform: {
-              rotation: {
-                x: (0 / 360) * PI * 2,
-                y: (0 / 360) * PI * 2,
-                z: (0 / 360) * PI * 2,
-              },
+            value: {
+              x: (80 / 360) * PI * 2,
+              y: (30 / 360) * PI * 2,
+              z: (-90 / 360) * PI * 2,
+              /*x: (0 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,*/
             },
           },
         ],
@@ -148,12 +129,10 @@ export const Posings = new Map([
         [
           {
             key: '.quaternion',
-            transform: {
-              rotation: {
-                x: (105 / 360) * PI * 2,
-                y: (0 / 360) * PI * 2,
-                z: (0 / 360) * PI * 2,
-              },
+            value: {
+              x: (0 / 360) * PI * 2,
+              y: (105 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,
             },
           },
         ],
@@ -163,12 +142,10 @@ export const Posings = new Map([
         [
           {
             key: '.quaternion',
-            transform: {
-              rotation: {
-                x: (0 / 360) * PI * 2,
-                y: (0 / 360) * PI * 2,
-                z: (0 / 360) * PI * 2,
-              },
+            value: {
+              x: (0 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,
             },
           },
         ],
@@ -178,12 +155,26 @@ export const Posings = new Map([
         [
           {
             key: '.quaternion',
-            transform: {
-              rotation: {
-                x: (10 / 360) * PI * 2,
-                y: (0 / 360) * PI * 2,
-                z: (30 / 360) * PI * 2,
-              },
+            value: {
+              /*x: (15 / 360) * PI * 2,
+              y: (50 / 360) * PI * 2,
+              z: (-40 / 360) * PI * 2,*/
+              x: (0 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,
+            },
+          },
+        ],
+      ],
+      [
+        States.JabImbact,
+        [
+          {
+            key: '.quaternion',
+            value: {
+              x: (0 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,
             },
           },
         ],
@@ -193,12 +184,105 @@ export const Posings = new Map([
         [
           {
             key: '.quaternion',
-            transform: {
-              rotation: {
-                x: (-100 / 360) * PI * 2,
-                y: (0 / 360) * PI * 2,
-                z: (120 / 360) * PI * 2,
-              },
+            value: {
+              /*x: (0 / 360) * PI * 2,
+              y: (-75 / 360) * PI * 2,
+              z: (75 / 360) * PI * 2,*/
+              x: (0 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,
+            },
+          },
+        ],
+      ],
+    ]),
+  ],
+  [
+    Parts.LeftElbow,
+    new Map([
+      [
+        States.Idle,
+        [
+          {
+            key: '.quaternion',
+            value: {
+              x: (0 / 360) * PI * 2,
+              y: (-135 / 360) * PI * 2,
+              z: (-90 / 360) * PI * 2,
+              /*x: (0 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,*/
+            },
+          },
+        ],
+      ],
+      [
+        States.HandsUpStart,
+        [
+          {
+            key: '.quaternion',
+            value: {
+              x: (105 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,
+            },
+          },
+        ],
+      ],
+      [
+        States.HandsUpFinish,
+        [
+          {
+            key: '.quaternion',
+            value: {
+              x: (0 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,
+            },
+          },
+        ],
+      ],
+      [
+        States.JabStart,
+        [
+          {
+            key: '.quaternion',
+            value: {
+              /*x: (20 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (70 / 360) * PI * 2,*/
+              x: (0 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,
+            },
+          },
+        ],
+      ],
+      [
+        States.JabImbact,
+        [
+          {
+            key: '.quaternion',
+            value: {
+              x: (0 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,
+            },
+          },
+        ],
+      ],
+      [
+        States.JabFinish,
+        [
+          {
+            key: '.quaternion',
+            value: {
+              /*x: (-135 / 360) * PI * 2,
+              y: (-10 / 360) * PI * 2,
+              z: (45 / 360) * PI * 2,*/
+              x: (0 / 360) * PI * 2,
+              y: (0 / 360) * PI * 2,
+              z: (0 / 360) * PI * 2,
             },
           },
         ],

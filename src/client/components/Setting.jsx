@@ -36,6 +36,7 @@ import { ColumnGrid, Row } from './Common';///////////
 import { GameContext } from './Context';
 
 import Common from '../../common.json';
+import { HighFramerateCoef, LowFramerateCoef } from '../../common/constants';
 import settingSlice from '../redux/settingSlice';
 import gameSlice from '../redux/gameSlice';
 import Loading from './Loading.jsx';
@@ -44,7 +45,7 @@ import Game from '../game/main';
 
 const { actions: settingActions } = settingSlice;
 const { actions: gameActions } = gameSlice;
-const { Games, HighFramerateCoef, LowFramerateCoef } = Common;
+const { Games } = Common;
 
 const gameMap = new Map(Games);
 
@@ -203,8 +204,8 @@ console.log('Setting:rendererd')
             size="small"
             sx={{ backgroundColor: 'white' }}
           >
-            <ToggleButton value="low" sx={{ width: '4rem' }}>低い</ToggleButton>
             <ToggleButton value="high" sx={{ width: '4rem' }}>高い</ToggleButton>
+            <ToggleButton value="low" sx={{ width: '4rem' }}>低い</ToggleButton>
           </ToggleButtonGroup>
         </Grid>
         <Grid container size={4} offset={2} sx={{ alignItems: 'center' }}>
@@ -222,8 +223,8 @@ console.log('Setting:rendererd')
             size="small"
             sx={{ backgroundColor: 'white' }}
           >
-            <ToggleButton value="hide" sx={{ width: '4rem' }}>非表示</ToggleButton>
             <ToggleButton value="show" sx={{ width: '4rem' }}>表示</ToggleButton>
+            <ToggleButton value="hide" sx={{ width: '4rem' }}>非表示</ToggleButton>
           </ToggleButtonGroup>
         </Grid>
         <Grid container size={4} offset={2} sx={{ alignItems: 'center' }}>

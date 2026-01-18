@@ -1,5 +1,5 @@
 import { States } from '../constants';
-import { Commands } from './skeletals';
+import { Clips } from './skeletals';
 
 const { PI, sin, cos } = Math;
 
@@ -17,7 +17,7 @@ const Levels = [
             {
               checkpoint: {
                 position: { x: 10, y: 0, z: 0 },
-                rotation: { y: 0 },
+                rotation: { y: (0 / 360) * PI * 2 },
               },
               offset: { x: 0, y: 0, z: 0 },
               characters: [
@@ -45,11 +45,11 @@ const Levels = [
                     {
                       // eventManager管理
                       name: 'start-animation',
-                      type: 'timeout',
-                      condition: { delay: 10 },
+                      type: 'interval',
+                      condition: { delay: 3 },
                       params: {
-                        // command: Commands.HandsUp,
-                        command: Commands.JabPunch,
+                        // clip: Clips.HandsUp,
+                        clip: Clips.JabPunch,
                       },
                       handler: 'start-animation',
                     },
@@ -119,11 +119,11 @@ const Levels = [
               terrain: {
                 grid: [
                   {
-                    widthSegments: 80,
+                    widthSegments: 50,
                     heightSegments: 12,
-                    depthSegments: 80,
+                    depthSegments: 50,
                     rotation: { x: 0, y: 0, z: 0 },
-                    position: { x: 0.25, y: 0.25, z: 0.25 },
+                    position: { x: 0.1, y: 0.1, z: 0.1 },
                   },
                 ],
                 ground: [
@@ -138,26 +138,26 @@ const Levels = [
                     rotation: { x: 0, y: 0, z: 0 },
                   },
                   {
-                    widthSegments: 100,
-                    depthSegments: 100,
-                    bumpHeight: 0.3, // 0.45,
+                    widthSegments: 40,
+                    depthSegments: 40,
+                    bumpHeight: 0.15,//0.3,
                     position: { x: 0, y: -5, z: 0 },
                     rotation: { x: 0, y: 0, z: 0 },
                   },
-                  /* {
+                  {
                     widthSegments: 7,
                     depthSegments: 20,
-                    bumpHeight: 0.9,
+                    bumpHeight: 0.3,
                     position: { x: -2.4, y: -2, z: 0 },
                     rotation: { x: 0, y: 0, z: -1.5 },
                   },
                   {
                     widthSegments: 7,
                     depthSegments: 20,
-                    bumpHeight: 0.9,
+                    bumpHeight: 0.3,
                     position: { x: 2.4, y: -2, z: 0 },
                     rotation: { x: 0, y: 0, z: 1.5 },
-                  }, */
+                  },
                 ],
               },
             },

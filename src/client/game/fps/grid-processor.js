@@ -7,8 +7,10 @@ const { sin, cos, PI } = Math;
 
 const coefX = 1;
 const coefY = 5;
-const offsetX = 0.08;
-const offsetY = 0.02;
+//const offsetX = 0.08;
+//const offsetY = 0.02;
+const offsetX = 0.03;
+const offsetY = 0.008;
 
 const frequencies = [2, -3, 5, -8, 12];
 const fluctuation = (...tList) => {

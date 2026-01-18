@@ -121,7 +121,8 @@ export const createPolyhedron = (
 
     if (satellite) {
       const pointDetail = size.pointDetail ?? 0;
-      geometry.points = new OctahedronGeometry(size.radius + 1, pointDetail);
+      //geometry.points = new OctahedronGeometry(size.radius + 1, pointDetail);
+      geometry.points = new OctahedronGeometry(size.radius + World.pointOffset, pointDetail);
       const pointsVertices = geometry.points
         .getAttribute('position')
         .array.slice();
@@ -150,9 +151,10 @@ export const createPolyhedron = (
     }
 
     if (satellite) {
+      const pointSize = World.pointSize / devicePixelRatio;
       material.points = new PointsMaterial({
         color: style.pointColor,
-        size: World.pointSize,
+        size: pointSize,
         map: self.texture.get('point'),
         blending: NormalBlending,
         alphaTest: 0.5,
@@ -181,7 +183,7 @@ export const createPolyhedron = (
   return mesh.body;
 };
 
-export const createSphere = (subtype, name, type, body, offset) => {
+export const createSphere = (subtype, name, type, body, objOffset) => {
   const {
     wireframe = false,
     satellite = false,
@@ -241,7 +243,7 @@ export const createSphere = (subtype, name, type, body, offset) => {
     if (satellite) {
       let geom;
       const pointDetail = size.pointDetail ?? 0;
-      const additional = pointSizeMap.get(pointSize);
+      const additional = pointSizeMap.get(pointSize) * World.pointOffset;
       const radius = size.radius + additional;
 
       if (satelliteCap === 'both') {
@@ -346,7 +348,7 @@ export const createSphere = (subtype, name, type, body, offset) => {
 
     if (satellite) {
       const pSprite = pointSpriteMap.get(pointSize);
-      const pSize = pointSizeMap.get(pointSize) * World.pointSize;
+      const pSize = pointSizeMap.get(pointSize) * World.pointSize / devicePixelRatio;
       material.points = new PointsMaterial({
         color: style.pointColor,
         size: pSize,
@@ -373,7 +375,7 @@ export const createSphere = (subtype, name, type, body, offset) => {
     mesh.body.add(mesh.points);
   }
 
-  offsetMesh(mesh.body, offset);
+  offsetMesh(mesh.body, objOffset);
 
   return mesh.body;
 };
@@ -445,7 +447,7 @@ export const createCapsule = (subtype, name, type, body, offset) => {
     }
 
     if (satellite) {
-      const additional = pointSizeMap.get(pointSize);
+      const additional = pointSizeMap.get(pointSize) * World.pointOffset;
       const radius = size.radius + additional;
       const heightSegments =
         (size.height > pointGap ? floor(size.height / pointGap) : 0) + 1;
@@ -487,25 +489,16 @@ export const createCapsule = (subtype, name, type, body, offset) => {
 
     if (type === 'arm') {
       geometry.body.rotateX(PI * 0.5);
-
-      if (type === 'arm') {
-        geometry.body.translate(0, 0, size.height * 0.5);
-      }
+      geometry.body.translate(0, 0, size.height * 0.5);
 
       if (wireframe) {
         geometry.wire.rotateX(PI * 0.5);
-
-        if (type === 'arm') {
-          geometry.wire.translate(0, 0, size.height * 0.5);
-        }
+        geometry.wire.translate(0, 0, size.height * 0.5);
       }
 
       if (satellite) {
         geometry.points.rotateX(PI * 0.5);
-
-        if (type === 'arm') {
-          geometry.points.translate(0, 0, size.height * 0.5);
-        }
+        geometry.points.translate(0, 0, size.height * 0.5);
       }
     }
 
@@ -580,7 +573,7 @@ export const createCapsule = (subtype, name, type, body, offset) => {
 
     if (satellite) {
       const pSprite = pointSpriteMap.get(pointSize);
-      const pSize = pointSizeMap.get(pointSize) * World.pointSize;
+      const pSize = pointSizeMap.get(pointSize) * World.pointSize / devicePixelRatio;
       material.points = new PointsMaterial({
         color: style.pointColor,
         size: pSize,
@@ -612,7 +605,7 @@ export const createCapsule = (subtype, name, type, body, offset) => {
   return mesh.body;
 };
 
-export const createBody = (
+export const createCapsuloid = (
   subtype,
   name,
   type,

@@ -117,17 +117,5 @@
         { "name": "first-stage", "type": "bgm", "file": "Morning.mp3" }
       ]
     ]
-  ],
-
-  "KeyPressMaxCount": 4,
-  "PointerEventSize": 8,
-  "ButtonSize": 17,
-  "AxisSize": 6,
-  "SharedDataSize": 2,
-  "SharedDataIndex": {
-    "frameCount": 0,
-    "time": 1
-  },
-  "HighFramerateCoef": 1,
-  "LowFramerateCoef": 2
+  ]
 }

@@ -1,4 +1,4 @@
-import { Vector3, Euler, Group } from 'three';
+import { Vector3, Euler, Quaternion, Group } from 'three';
 
 import EventDispatcher from './event-dispatcher';
 import { genId, disposeObject, getRandomDistance } from './utils';
@@ -14,6 +14,8 @@ class Entity extends EventDispatcher {
 
   #euler = new Euler();
 
+  #quat = new Quaternion();
+
   #pos = new Vector3();
 
   #randVec = new Vector3();
@@ -27,8 +29,6 @@ class Entity extends EventDispatcher {
   #stunningDuration = 0;
 
   #center = new Vector3();
-
-  #prevCenter = new Vector3();
 
   constructor(game, name, type, subtype, source) {
     super();
@@ -47,52 +47,71 @@ class Entity extends EventDispatcher {
     this.platform = null;
 
     this.hasControls = false;
+    this.position = new Vector3();
+    this.rotation = new Quaternion();
+    this.velocity = new Vector3();/////////
     this.collidable = null;
     this.updaters = [];
   }
 
-  setCoords(coords) {
+  setCoords(coords = {}) {
     const { position, rotation } = coords;
 
     if (this.collidable == null) {
       return;
     }
 
-    const { collider } = this.collidable;
-
     if (rotation != null) {
-      const x = rotation.x ?? 0;
-      const y = rotation.y ?? 0;
-      const z = rotation.z ?? 0;
-
-      this.#euler.set(x, y, z);
-      this.collidable.updateRotation(this.#euler);
+      this.setRotation(rotation);
     }
 
     if (position != null) {
-      const x = position.x != null ? position.x * World.spacing : 0;
-      const y = position.y != null ? position.y * World.spacing : 0;
-      const z = position.z != null ? position.z * World.spacing : 0;
-
-      this.#vec.set(x, y, z);
-      this.collidable.updatePosition(this.#vec);
+      this.setPosition(position);
     }
   }
 
+  setRotation(rotation = {}) {
+    const x = rotation.x ?? 0;
+    const y = rotation.y ?? 0;
+    const z = rotation.z ?? 0;
+
+    this.#euler.set(x, y, z);
+    this.#quat.setFromEuler(this.#euler);
+    this.rotation.copy(this.#quat);
+
+    this.collidable.applyRotation();
+  }
+
+  setPosition(position = {}) {
+    const x = (position.x ?? 0) * World.spacing;
+    const y = (position.y ?? 0) * World.spacing;
+    const z = (position.z ?? 0) * World.spacing;
+
+    this.#vec.set(x, y, z);
+    this.#vec.sub(this.position);
+    this.position.set(x, y, z);
+
+    this.collidable.traverse(({ collider }) => {
+      collider.moveBy(this.#vec);
+    });
+  }
+
+  rotateBy(delta = new Quaternion()) {
+    this.rotation.multiply(delta);
+  }
+
   show(coords) {
-    if (coords == null && this.collidable != null) {
-      this.collidable.updatePosition(this.#pos);
+    if (coords == null) {
+      this.setCoords({ position: this.#pos })
     } else {
       this.setCoords(coords);
     }
   }
 
   hide() {
-    if (this.collidable != null) {
-      this.collidable.collider.getCenter(this.#pos);
-      getRandomDistance(Game.longDistance, this.#randVec);
-      this.collidable.updatePosition(this.#randVec);
-    }
+    this.#pos.copy(this.position);
+    getRandomDistance(Game.longDistance, this.#randVec);
+    this.setCoords({ position: this.#randVec });
   }
 
   getLapTime() {
@@ -201,11 +220,11 @@ class Entity extends EventDispatcher {
     }
   }
 
-  startAnimation(command) {
+  startAnimation(clipName) {
     if (this.collidable != null) {
       this.collidable.traverse(({ name, skeletal }) => {
         if (skeletal != null) {
-          skeletal.dispatchCommand(command);
+          skeletal.dispatchClip(clipName);
         }
       });
     }
@@ -236,23 +255,23 @@ class Entity extends EventDispatcher {
     //
   }
 
-  update(deltaTime, elapsedTime, damping) {
+  update(deltaTime, elapsedTime) {
     super.update(deltaTime, elapsedTime);
 
     if (this.collidable != null) {
-      this.collidable.traverse(
-        ({ parent, velocity, skeletal, collider, prevPos }) => {
-          if (skeletal != null) {
-            skeletal.update(deltaTime);
-          }
+      this.collidable.traverse((col) => {
+        const { skeletal, velocity, collider, data: { prevCenter } } = col;
+        if (skeletal != null) {
+          skeletal.update(deltaTime);
+          col.applyRotation();////////
+        }
 
-          if (parent != null) {
-            collider.getCenter(this.#center);
-            velocity.subVectors(this.#center, prevPos).divideScalar(deltaTime);
-            prevPos.copy(this.#center);
-          }
-        },
-      );
+        //col.applyRotation();
+
+        collider.getCenter(this.#center);
+        velocity.subVectors(this.#center, prevCenter).divideScalar(deltaTime);
+        prevCenter.copy(this.#center);
+      });
     }
 
     for (let i = 0, l = this.updaters.length; i < l; i += 1) {

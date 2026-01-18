@@ -79,7 +79,7 @@ class Character extends Entity {
 
   resetCoords() {
     Collidable.init(this.collidable);
-    this.collidable.velocity.set(0, 0, 0);
+    this.velocity.set(0, 0, 0);
     this.#fallingDistance = 0;
   }
 
@@ -88,9 +88,9 @@ class Character extends Entity {
   }
 
   update(deltaTime, elapsedTime, damping) {
-    super.update(deltaTime, elapsedTime, damping);
+    super.update(deltaTime, elapsedTime);
 
-    const { velocity } = this.collidable;
+    const { velocity } = this;
 
     if (!this.#isGrounded) {
       const falling = World.gravity * deltaTime;
@@ -114,17 +114,6 @@ class Character extends Entity {
       velocity.set(0, 0, 0);
     }
 
-    /* this.#v1.copy(velocity);
-
-    if (this.platform != null) {
-      this.#v2.copy(this.platform.velocity);
-      this.#v1.add(this.#v2);
-    } else if (this.#v2.x !== 0 || this.#v2.y !== 0 || this.#v2.z !== 0) {
-      this.#v1.add(this.#v2);
-      this.#v2.set(0, 0, 0);
-    }
-
-    this.#move.copy(this.#v1).multiplyScalar(deltaTime); */
     if (this.platform != null) {
       this.#v1.copy(velocity);
       this.#v1.add(this.platform.velocity);
@@ -133,6 +122,7 @@ class Character extends Entity {
       this.#move.copy(velocity).multiplyScalar(deltaTime);
     }
 
+    this.position.add(this.#move);
     this.collidable.traverse(({ collider }) => {
       collider.moveBy(this.#move);
     });
@@ -144,7 +134,6 @@ class Character extends Entity {
     const { body, collider } = this.collidable;
     /// //////////
     if (!this.hasControls) {
-      // this.name === '敵キャラ１' && console.log(collider.getCenter(new Vector3()))
       this.collidable.traverse((col) => {
         col.collider.getCenter(this.#pos, col.type === 'arm');
         col.mesh.position.copy(this.#pos);
@@ -153,16 +142,15 @@ class Character extends Entity {
       });
     }
     /// ///////////////
-    collider.getCenter(this.#pos);
-    body.position.copy(this.#pos);
-    body.quaternion.copy(this.collidable.quaternion);
+    this.collidable.body.position.copy(this.position);
+    this.collidable.updateRotation();
 
     if (this.isAlive()) {
       const rot = deltaTime * this.data.stats.satelliteSpeed;
       this.collidable.traverse(({ type, satellite }, depth) => {
-        const coef = depth % 2 === 0 ? -1 : 1;
-
         if (satellite != null) {
+          const coef = depth % 2 === 0 ? -1 : 1;
+
           if (type === 'joint' || type === 'arm') {
             satellite.rotation.z += rot * coef;
           } else {

@@ -13,12 +13,14 @@ import {
 } from 'three';
 
 import {
-  Commands,
   States,
   Events,
   Keyframes,
-  ProcessingOrder,
   Posings,
+
+  Clips,//////////
+  AnimationClips,////////////
+  KeyPoses,///////////
 } from './data/skeletals';
 import { Axis } from './settings';
 
@@ -28,119 +30,109 @@ const rotationCoef = 1;
 class Skeletal {
   #quat = new Quaternion();
 
-  constructor(name, object, collidable, options = {}) {
+  constructor(name, clips, object, collidable) {
     this.name = name;
     this.object = object;
     this.collidable = collidable;
-    this.options = {
-      relative: true,
+    this.options = new Map();
 
-      ...options,
-    };
-
-    this.keys = new Set();
     this.transform = {
+      quaternion: new Quaternion(),
+      position: new Vector3(),
+    };
+    this.prevTransform = {
       quaternion: new Quaternion(),
       position: new Vector3(),
     };
 
     this.mixer = new AnimationMixer(this.transform);
     this.clips = [];
-    this.prevMap = new Map();
 
-    this.states = new Set(); /// ///////
+    for (let i = 0, l = clips.length; i < l; i += 1) {
+      const clipName = clips[i];
 
-    if (Posings.has(this.name)) {
-      const posingMap = Posings.get(this.name);
+      if (AnimationClips.has(clipName)) {
+        const { parts, relative = false, keyframes } = AnimationClips.get(clipName);
 
-      for (const [command, data] of Keyframes) {
-        const { times, states } = data;
-        const results = new Map();
+        if (parts.includes(name)) {
+          const kfMap = new Map();
 
-        for (let i = 0, l = times.length; i < l; i += 1) {
-          const state = states[i];
+          for (let j = 0, m = keyframes.length; j < m; j += 1) {
+            const { state, time } = keyframes[j];
 
-          if (posingMap.has(state)) {
-            const posings = posingMap.get(state);
+            if (KeyPoses.has(name)) {
+              const tfMap = KeyPoses.get(name);
 
-            for (let j = 0, m = posings.length; j < m; j += 1) {
-              const posing = posings[j];
-              const {
-                key,
-                transform: { rotation },
-              } = posing;
-              this.keys.add(key);
+              if (tfMap.has(state)) {
+                const transforms = tfMap.get(state);
 
-              if (key.includes('.quaternion')) {
-                if (!results.has(key)) {
-                  results.set(key, []);
+                for (let k = 0, n = transforms.length; k < n; k += 1) {
+                  const { key, value } = transforms[k];
+
+                  if (!kfMap.has(key)) {
+                    kfMap.set(key, { times: [], values: [] });
+                  }
+
+                  if (key.includes('.quaternion')) {
+                    const { times, values } = kfMap.get(key);
+                    times.push(time);
+
+                    const rx = value.x ?? 0;
+                    const ry = value.y ?? 0;
+                    const rz = value.z ?? 0;
+                    const euler = new Euler(rx, ry, rz);
+                    const quat = new Quaternion().setFromEuler(euler);
+                    values.push(quat);
+                  } else if (key.includes('.position')) {
+                    // TODO
+                  }
                 }
-
-                if (rotation != null) {
-                  const rx = rotation.x ?? 0;
-                  const ry = rotation.y ?? 0;
-                  const rz = rotation.z ?? 0;
-                  const euler = new Euler(rx, ry, rz);
-                  const quat = new Quaternion().setFromEuler(euler);
-
-                  const values = results.get(key);
-                  values.push(quat);
-                }
-              } else if (key.includes('.position')) {
-                if (!results.has(key)) {
-                  results.set(key, []);
-                }
-
-                // TODO
               }
             }
           }
+
+          const tracks = [];
+
+          kfMap.forEach(({ times, values }, key) => {
+            let track;
+
+            if (key.includes('.quaternion')) {
+              track = new QuaternionKeyframeTrack(
+                key,
+                times,
+                values.map((quat) => quat.toArray()).flat(),
+              );
+            } else if (key.includes('.position')) {
+              track = new VectorKeyframeTrack(
+                key,
+                times,
+                values.map((vec) => vec.toArray()).flat(),
+              );
+            }
+
+            tracks.push(track);
+          });
+
+          const animeName = `clip:${clipName}:${name}`;
+          const animeClip = new AnimationClip(animeName, -1, tracks);
+
+          this.options.set(animeClip, { relative });
+          this.clips.push(animeClip);
         }
-
-        const tracks = [];
-
-        for (const [key, values] of results) {
-          let track;
-
-          if (key.includes('.quaternion')) {
-            track = new QuaternionKeyframeTrack(
-              key,
-              times,
-              values.map((quat) => quat.toArray()).flat(),
-            );
-          } else if (key.includes('.position')) {
-            track = new VectorKeyframeTrack(
-              key,
-              times,
-              values.map((vec) => vec.toArray()).flat(),
-            );
-          }
-
-          tracks.push(track);
-        }
-
-        const clipName = `command-${command}:${name}`;
-        const clip = new AnimationClip(clipName, -1, tracks);
-
-        this.clips.push(clip);
-        const prev = {
-          quaternion: new Quaternion(),
-          position: new Vector3(),
-        };
-        this.prevMap.set(clip, prev);
       }
-    }
+    } 
   }
 
-  dispatchCommand(command) {
-    if (Events.has(command)) {
-      const clipName = `command-${command}:${this.name}`;
+  dispatchClip(name, loop = false) {
+    if (Events.has(name)) {
+      const { relative } = AnimationClips.get(name)
+      const clipName = `clip:${name}:${this.name}`;
       const clip = AnimationClip.findByName(this.clips, clipName);
 
       if (clip != null) {
         const action = this.mixer.clipAction(clip);
-        const loop = this.options.loop === true ? LoopRepeat : LoopOnce;
-        action.loop = loop;
+        action.loop = loop === true ? LoopRepeat : LoopOnce;
+        action.timeScale = 0.1;///////////////
         action.play();
       }
     }
@@ -154,36 +146,28 @@ class Skeletal {
       for (let i = 0, l = this.clips.length; i < l; i += 1) {
         const clip = this.clips[i];
         const action = this.mixer.existingAction(clip);
-        const prev = this.prevMap.get(clip);
 
         if (action != null && action.isRunning()) {
           finished = false;
-          const { body } = this.collidable;
-          const { quaternion } = this.transform;
-          const { relative } = this.options;
+          const { quaternion, position } = this.transform;
+          const { quaternion: prevQuat, position: prevPos } = this.prevTransform;
+          const { relative } = this.options.get(clip);
 
-          for (const key of this.keys) {
-            if (key.includes('.quaternion')) {
-              if (!quaternion.equals(prev.quaternion)) {
-                if (relative) {
-                  this.#quat.copy(prev.quaternion).conjugate();
-                  this.#quat.multiply(quaternion).normalize();
+          if (!quaternion.equals(prevQuat)) {
+            if (relative) {
+              this.#quat.copy(prevQuat).conjugate();
+              this.#quat.multiply(quaternion).normalize();
 
-                  this.collidable.updateDeltaRotation(this.#quat);
-                  body.quaternion.multiply(this.#quat);
-                } else {
-                  if (!quaternion.equals(prev.quaternion)) {
-                    this.collidable.updateRotation(quaternion);
-                  }
-
-                  body.quaternion.copy(quaternion);
-                }
-              }
-
-              prev.quaternion.copy(quaternion);
-            } else if (key.includes('.position')) {
-              // TODO
+              this.collidable.rotateBy(this.#quat);
+            } else {
+              this.collidable.setRotation(quaternion);
             }
+
+            prevQuat.copy(quaternion);
+          }
+
+          if (!position.equals(prevPos)) {
+            // TODO
           }
         }
       }

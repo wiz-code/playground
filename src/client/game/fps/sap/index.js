@@ -1,8 +1,8 @@
 import { Box3 } from 'three';
 import EndPoint from './endpoint';
 import Box from './box';
-import { Game } from '../settings';
-import { getCapsuleBoundingBox } from './utils';
+import { Game } from '../../settings';
+import { getCapsuleBoundingBox } from '../utils';
 
 const Dimensions = 3;
 const dimensionMap = new Map([

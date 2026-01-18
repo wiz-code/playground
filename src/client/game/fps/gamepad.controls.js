@@ -1,7 +1,7 @@
 import { Spherical, Vector3, Euler } from 'three';
 
 import Publisher from '../publisher';
-import { Game } from '../settings';
+import { Game, BindedButtons } from '../settings';
 import { Controls, Screen, GameColor, InitialDir } from './settings';
 import { Actions } from './constants';
 

@@ -1,8 +1,4 @@
-import { Vector3 /* */, Euler } from 'three';
-
-import { Axis } from './settings';
-
-const normalAxis = { joint: Axis.y, arm: Axis.z };
+import { Vector3, Euler } from 'three';
 
 function checkAABBAxis(p1x, p1y, p2x, p2y, minx, maxx, miny, maxy, radius) {
   return (
@@ -23,8 +19,8 @@ class Capsule {
   #c1 = new Vector3();
 
   constructor(
-    start = new Vector3(0, 0.5, 0),
-    end = new Vector3(0, 1, 0),
+    start = new Vector3(0, -0.5, 0),
+    end = new Vector3(0, 0.5, 0),
     radius = 0.5,
   ) {
     this.start = new Vector3();
@@ -40,19 +36,18 @@ class Capsule {
     return new Capsule(this.start.clone(), this.end.clone(), this.radius);
   }
 
-  rotate(quaternion, role) {
-    if (role === 'arm') {
-      this.normal.copy(Axis.z).applyQuaternion(quaternion);
-      this.normal.normalize();
+  // 指定された軸を基準に回転を適用する
+  setRotation(quaternion, axis, rotationCenter) {
+    this.normal.copy(axis).applyQuaternion(quaternion).normalize();
+
+    if (rotationCenter === 'start') {
       this.end.copy(
         this.#v2.addVectors(
           this.start,
           this.#v1.copy(this.normal).multiplyScalar(this.height),
         ),
       );
-    } else {
-      this.normal.copy(Axis.y).applyQuaternion(quaternion);
-      this.normal.normalize();
+    } else if (rotationCenter === 'center') {
       this.getCenter(this.#c1);
 
       this.end.copy(

@@ -1,13 +1,8 @@
 export const InputKeys = {
   KeyW: 1,
-  ArrowUp: 1,
   KeyS: 2,
-  ArrowDown: 2,
-
   KeyA: 3,
-  ArrowLeft: 3,
   KeyD: 4,
-  ArrowRight: 4,
 
   KeyQ: 5,
   KeyE: 6,
@@ -18,12 +13,17 @@ export const InputKeys = {
   KeyX: 10,
   KeyC: 11,
 
-  Space: 20,
+  ArrowUp: 20,
+  ArrowDown: 21,
+  ArrowLeft: 22,
+  ArrowRight: 23,
 
-  Shift: 30,
-  ShiftLeft: 30,
-  ShiftRight: 30,
-  Alt: 40,
-  AltLeft: 40,
-  AltRight: 40,
+  Space: 30,
+
+  Shift: 31,
+  ShiftLeft: 32,
+  ShiftRight: 33,
+  Alt: 34,
+  AltLeft: 35,
+  AltRight: 36,
 };

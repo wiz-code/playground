@@ -7,10 +7,16 @@ import {
   AmbientLight,
   Texture,
   SRGBColorSpace,
+  Euler,////////////////
+  Quaternion,//////////////
+  AnimationClip, /////////////
+  ObjectLoader,///////////////
+  MeshBasicMaterial,/////////////
 } from 'three';
+import { VertexNormalsHelper } from 'three/addons/helpers/VertexNormalsHelper.js';//////////
 
 import { Game as GameSettings } from '../settings';
-import Common from '../../../common.json';
+import { SharedDataIndex } from '../../../common/constants';
 import { Scene, Camera, World, Light } from './settings';
 import FirstPersonControls from './controls';
 import GamepadControls from './gamepad.controls';
@@ -18,7 +24,7 @@ import { GameStates, PlayState, CommonEvents } from './constants';
 import { Methods } from './data/methods';
 import { Heroes } from './data/entities';
 import Levels from './data/levels';
-import { Commands } from './data/skeletals';
+//import { Commands } from './data/skeletals';
 import createLevel from './create-level';
 import ObjectManager from './object-manager';
 import SceneManager from './scene-manager';
@@ -30,14 +36,13 @@ import EventManager from './event-manager';
 import MovableManager from './movable-manager';
 import GridProcessor from './grid-processor';
 import Movable from './movable';
-import Loop from '../async-loop';
+import Loop from '../loop';
 
 import { offsetPosition, disposeObject } from './utils';
 
 const { floor, round, min, exp } = Math;
 const levelMap = new Map(Levels);
 
-const { SharedDataIndex } = Common;
 const { baseResistance } = World;
 const resistances = Object.entries(World.Resistance);
 const dampingData = {};
@@ -76,6 +81,8 @@ class WorkerMain {
 
     this.params = { ...params };
 
+    self.devicePixelRatio = this.params.devicePixelRatio;//////////////////
+
     imageBitmap.forEach((value, key, map) => {
       const texture = new Texture(value);
       texture.colorSpace = SRGBColorSpace;
@@ -92,6 +99,22 @@ class WorkerMain {
     this.#sab = sab;
 
     this.data = {};
+
+    this.worker = {};
+    this.worker.loader = new Worker(new URL('../worker-loader.js', import.meta.url));
+    this.worker.loader.postMessage({ type: 'init' });
+    this.worker.loader.postMessage({ type: 'load', value: ['terrain-study-01.glb', 'gltf'] });
+    this.worker.loader.addEventListener('message', (event) => {
+      new ObjectLoader().parse(event.data.value, (object) => {
+        const [mesh] = object.children;
+        mesh.material = new MeshBasicMaterial({ color: 0xffff00 });
+        //mesh.material.wireframe = true;
+        mesh.material.needsUpdate = true;
+const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
+        this.game.scene.add(object);
+        object.position.y -= 17;
+      });
+    });
 
     // ゲーム管理変数
     this.game = {};
@@ -183,6 +206,19 @@ class WorkerMain {
 
     this.update = this.update.bind(this);
     this.loop = new Loop(this.update);
+
+    ////////////for develop////////
+    this.props = {
+      'state-jab-start': {
+        'left-shoulder': { x: 0, y: 0, z: 0 },
+        'left-elbow': { x: 0, y: 0, z: 0 },
+      },
+      'state-jab-finish': {
+        'left-shoulder': { x: 0, y: 0, z: 0 },
+        'left-elbow': { x: 0, y: 0, z: 0 },
+      },
+    };
+    ///////////////////////////
   }
 
   async init() {
@@ -359,6 +395,59 @@ class WorkerMain {
         break;
       }
 
+      ////for develop/////////
+      case 'change-gui': {
+        const [stateName, partName, component, angle] = event.data.value;
+        const value = (angle / 360) * Math.PI * 2;
+        const rotation = this.props[stateName][partName];
+        rotation[component] = value;
+        const { x, y, z } = rotation;
+        const euler = new Euler(x, y, z);
+        const quat = new Quaternion().setFromEuler(euler);
+
+        const enemy1 = this.objectManager.getObjectByName('敵キャラ１');
+        const { skeletal: { clips } } = enemy1.collidable.getChildByName(partName);
+        const clip = AnimationClip.findByName(clips, `clip:jab-punch:${partName}`);
+        const [track] = clip.tracks;
+
+        if (stateName === 'state-jab-start') {
+          track.values[4] = quat.x;
+          track.values[5] = quat.y;
+          track.values[6] = quat.z;
+          track.values[7] = quat.w;
+        } else if (stateName === 'state-jab-finish') {
+          track.values[8] = quat.x;
+          track.values[9] = quat.y;
+          track.values[10] = quat.z;
+          track.values[11] = quat.w;
+        }
+
+        /*if (name === 'state-jab-start:left-shoulder:angleX') {
+          this.props.stateJabStart.leftShoulder.x = rad;
+          const { x, y, z } = this.props.stateJabStart.leftShoulder;
+          const euler = new Euler(x, y, z);
+          const quat = new Quaternion().setFromEuler(euler);
+          
+          track.values[4] = quat.x;
+          track.values[5] = quat.y;
+          track.values[6] = quat.z;
+          track.values[7] = quat.w;
+        } else if (name === 'state-jab-start:left-shoulder:angleY') {
+          this.props.stateJabStart.leftShoulder.y = rad;
+          const { x, y, z } = this.props.stateJabStart.leftShoulder;
+          const euler = new Euler(x, y, z);
+          const quat = new Quaternion().setFromEuler(euler);
+        } else if (name === 'state-jab-start:left-shoulder:angleZ') {
+          this.props.stateJabStart.leftShoulder.z = rad;
+          const { x, y, z } = this.props.stateJabStart.leftShoulder;
+          const euler = new Euler(x, y, z);
+          const quat = new Quaternion().setFromEuler(euler);
+        }*/
+
+        break;
+      }
+
+      /////remove//////
       case 'main-updated': {
         if (this.#mainUpdated != null) {
           this.#mainUpdated();
@@ -367,18 +456,17 @@ class WorkerMain {
         break;
       }
 
+      // CrossOrigin Isolation無効の場合
       case 'update': {
         const { value } = event.data;
 
-        if (!this.params.crossOriginIsolated) {
-          if (this.#gamepadIndex !== -1) {
-            const [buttons, axes] = value;
-            this.controls.input(buttons, axes);
-          } else {
-            const [pointerValues, keyValues] = value;
-            this.controls.handleEvents(pointerValues, keyValues);
-            this.controls.input();
-          }
+        if (this.#gamepadIndex !== -1) {
+          const [buttons, axes] = value;
+          this.controls.input(buttons, axes);
+        } else {
+          const [pointerValues, keyValues] = value;
+          this.controls.handleEvents(pointerValues, keyValues);
+          this.controls.input();
         }
 
         break;
@@ -514,7 +602,7 @@ class WorkerMain {
       this.objectManager.add(enemy);
     }
 
-    for (let i = 0; i < 20; i += 1) {
+    for (let i = 0; i < 10; i += 1) {
       const rx = Math.random() * 20 - 10;
       const rz = Math.random() * 40 - 10;
 
@@ -679,36 +767,34 @@ class WorkerMain {
     }
   }
 
-  async update() {
+  update() {
     this.#frameCount += 1;
 
     const { framerateCoef, crossOriginIsolated, canUseWaitAsync } = this.params;
 
     if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
-      return Promise.resolve();
+      //return Promise.resolve();
+      return;
     }
 
     this.#prevTime = this.#elapsedTime;
     const currentTime = performance.now() * 0.001;
     this.#elapsedTime = currentTime - this.#startTime;
 
-    if (crossOriginIsolated && canUseWaitAsync) {
-      const wait = Atomics.waitAsync(this.#sab.waitWorker, 0, 0);
+    if (crossOriginIsolated) {
       this.#sab.data[SharedDataIndex.frameCount] = this.#frameCount;
       this.#sab.data[SharedDataIndex.time] = this.#elapsedTime;
-    
-      Atomics.notify(this.#sab.waitMain, 0);
-      await wait.value;
+
+      if (canUseWaitAsync) {
+        Atomics.notify(this.#sab.waitStats, 0);
+      } else {
+        self.postMessage({ type: 'update' });
+      }
     } else {
       self.postMessage({ type: 'update', value: [this.#frameCount, this.#elapsedTime] });
-
-      const { promise, resolve } = Promise.withResolvers();
-      this.#mainUpdated = resolve;
-      await this.#mainUpdated;
     }
 
     this.updateWorker();
-    return Promise.resolve();
   }
 
   updateWorker() {

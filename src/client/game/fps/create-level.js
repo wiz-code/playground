@@ -11,7 +11,7 @@ import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
 import { MeshBVH, MeshBVHHelper, SAH } from 'three-mesh-bvh';
 import { World } from './settings';
 
-import { createGrid, createFineGrid, createGround } from './terrain';
+import { createGrid, createGround } from './terrain';
 
 const createLevel = (levelData, crossOriginIsolated) => {
   const { sections } = levelData;
@@ -31,26 +31,22 @@ const createLevel = (levelData, crossOriginIsolated) => {
 
       for (let j = 0, m = terrain.grid.length; j < m; j += 1) {
         const data = terrain.grid[j];
-        const grid = createGrid(data);
-        const fineGrid = createFineGrid(data);
+        const grid = createGrid(data, devicePixelRatio);
         gridGroup.add(grid);
-        gridGroup.add(fineGrid);
         gridGroup.type = 'grid';
         block.add(gridGroup);
       }
     } else if (terrain.grid != null) {
       const gridGroup = new Group();
-      const grid = createGrid(terrain.grid);
-      const fineGrid = createFineGrid(terrain.grid);
+      const grid = createGrid(terrain.grid, devicePixelRatio);
       gridGroup.add(grid);
-      gridGroup.add(fineGrid);
       gridGroup.type = 'grid';
       block.add(gridGroup);
     }
 
     for (let j = 0, m = terrain.ground.length; j < m; j += 1) {
       const data = terrain.ground[j];
-      const { object, bvhGeom } = createGround(data);
+      const { object, bvhGeom } = createGround(data, devicePixelRatio);
       block.add(object);
       bvhGeoms.push(bvhGeom);
     }

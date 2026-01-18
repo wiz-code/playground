@@ -59,8 +59,8 @@ function FPSSetting() {
           size="small"
           sx={{ backgroundColor: 'white' }}
         >
-          <ToggleButton value="hide" sx={{ width: '4rem' }}>非表示</ToggleButton>
           <ToggleButton value="show" sx={{ width: '4rem' }}>表示</ToggleButton>
+          <ToggleButton value="hide" sx={{ width: '4rem' }}>非表示</ToggleButton>
         </ToggleButtonGroup>
       </Grid>
     </>

@@ -1,37 +1,5 @@
 import { Vector3 } from 'three';
 
-export const InputKeys = {
-  // event.codeで取得する
-  KeyW: 1,
-  ArrowUp: 1,
-  KeyS: 2,
-  ArrowDown: 2,
-
-  KeyA: 3,
-  ArrowLeft: 3,
-  KeyD: 4,
-  ArrowRight: 4,
-
-  KeyQ: 5,
-  KeyE: 6,
-
-  KeyR: 7,
-  KeyF: 8,
-  KeyZ: 9,
-  KeyX: 10,
-  KeyC: 11,
-
-  Space: 20,
-
-  // event.shiftKeyなどの真偽値で取得
-  Shift: 30,
-  ShiftLeft: 30,
-  ShiftRight: 30,
-  Alt: 40,
-  AltLeft: 40,
-  AltRight: 40,
-};
-
 export const MashKeys = [
   'KeyW',
   'ArrowUp',
@@ -125,3 +93,19 @@ export const GameStates = [
   ['push-away', 0],
   ['no-checkpoint', 0],
 ];
+
+export const Parts = {
+  Body: 'body',
+  UpperBody: 'upper-body',
+  LowerBody: 'lower-body',
+  LeftShoulder: 'left-shoulder',
+  LeftUpperarm: 'left-upperarm',
+  LeftElbow: 'left-elbow',
+  LeftForearm: 'left-forearm',
+  LeftHand: 'left-hand',
+  RightShoulder: 'right-shoulder',
+  RightUpperarm: 'right-upperarm',
+  RightElbow: 'right-elbow',
+  RightForearm: 'right-forearm',
+  RightHand: 'right-hand',
+};

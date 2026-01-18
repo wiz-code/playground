@@ -18,7 +18,7 @@ import Capsule from './capsule';
 import Collider from './collider';
 import {
   createCapsule,
-  createBody,
+  createCapsuloid,
   createBust,
   createSphere,
   createPolyhedron,
@@ -56,7 +56,9 @@ class Collidable {
     this.children = [];
 
     this.velocity = new Vector3();
-    this.prevPos = new Vector3();
+    this.data = {
+      prevCenter: new Vector3(),
+    };
 
     /// /////
     this.mesh = new Object3D();
@@ -75,9 +77,10 @@ class Collidable {
     this.name = name;
     this.type = type ?? 'object';
     this.offset = offset ?? {};
+    this.params = { body, collider };//////////////
 
-    if (body.shape === 'body') {
-      this.body = createBody(
+    if (body.shape === 'capsuloid') {
+      this.body = createCapsuloid(
         object.subtype,
         name,
         this.type,
@@ -100,7 +103,7 @@ class Collidable {
         8,
         3,
       );
-      geom.translate(0, body.size.height * 0.5, 0);
+      //geom.translate(0, body.size.height * 0.5, 0);
       geom = new EdgesGeometry(geom);
       const mat = new MeshBasicMaterial({
         color: 0x5aff19,
@@ -132,6 +135,7 @@ class Collidable {
       this.body.name = name;
     }
 
+    // 親オブジェクトがアームの場合、自身の起点を親アームの長さ分だけ進ませる必要がある
     if (parent != null && parent.type === 'arm') {
       const { height } = parent.body.geometry.parameters;
       this.body.position.z += height;
@@ -158,19 +162,22 @@ class Collidable {
       bounds = new Box3(collider.min, collider.max);
     }
 
-    this.collider = new Collider(object, bounds, collider.stats, this.type);
+    this.collider = new Collider(object, bounds, collider.size, collider.stats, this.type);
     this.collider.enable(collider.enabled ?? true);
 
     this.skeletal = null;
 
-    if (skeletal != null /* && this.parent != null */) {
-      const { name, options } = skeletal;
-      this.skeletal = new Skeletal(name, this.object, this, options);
+    if (skeletal != null) {
+      //const { name, options } = skeletal;
+      const { name, clips } = skeletal;
+      //this.skeletal = new Skeletal(name, this.object, this, options);
+      this.skeletal = new Skeletal(name, clips, this.object, this);
     }
 
     this.rotation = new Quaternion(); // ローカル回転
     this.quaternion = new Quaternion(); // グローバル回転
     this.position = new Vector3(); // ローカル座標
+    this.updated = false;//////////
 
     if (children.length > 0) {
       for (let i = 0, l = children.length; i < l; i += 1) {
@@ -229,78 +236,79 @@ class Collidable {
     });
   }
 
-  updatePosition(vec) {
-    if (this.parent == null) {
-      this.#v1.copy(vec);
-      this.collider.getCenter(this.#v2);
-      this.#v1.sub(this.#v2);
-
-      this.traverse(({ collider }) => {
-        collider.moveBy(this.#v1);
-      });
-    } else {
-      this.body.position.copy(vec);
-      this.position.copy(vec);
-      // this.#q1.identity();
-      // this.updateDeltaRotation(this.#q1);
-    }
+  setPosition(vec) {
+    this.position.copy(vec);
+    this.applyRotation();
   }
 
-  updateRotation(rotation) {
+  setRotation(rotation) {
     if (rotation.isEuler) {
       this.#q1.setFromEuler(rotation);
     } else {
       this.#q1.copy(rotation);
     }
 
-    this.#q2.copy(this.rotation).conjugate();
-    this.#q2.multiply(this.#q1).normalize();
-    this.updateDeltaRotation(this.#q2);
+    this.rotation.copy(this.#q1);
   }
 
-  updateDeltaRotation(quat) {
-    this.traverse((col, depth) => {
-      const { type, parent, collider, rotation, position, quaternion } = col;
+  rotateBy(delta = new Quaternion()) {
+    this.rotation.multiply(delta);
+  }
 
-      if (depth === 0) {
-        rotation.multiply(quat);
+  applyRotation() {
+    this.traverse(({ object, parent, body, collider, rotation, quaternion, position }, depth) => {
+      if (parent == null) {
+        quaternion.copy(object.rotation).multiply(rotation);
+        this.updated = true;
+
+        if (collider.shape === 'capsule') {
+          collider.setCapsuleRotation(quaternion);
+        }
+        
+        this.#v1.copy(object.position);
+
+        this.#v2.copy(position);
+        this.#v2.applyQuaternion(object.rotation);
+      } else {
+        if (depth === 0) {
+          this.updated = true;
+        }
+
+        const { type: pt, collider: pc, quaternion: pq } = parent;
+        quaternion.multiplyQuaternions(pq, rotation);
+
+        if (collider.shape === 'capsule') {
+          collider.setCapsuleRotation(quaternion);
+        }
+
+        if (pt === 'arm') {
+          this.#v1.copy(pc.getProp('end'));
+        } else {
+          pc.getCenter(this.#v1);
+        }
+
+        this.#v2.copy(position);
+        this.#v2.applyQuaternion(pq);
+      }
+
+      collider.moveTo(this.#v1);
+      collider.moveBy(this.#v2);
+    });
+  }
+
+  updateRotation() {
+    this.traverse(({ parent, body, rotation, quaternion, updated }, depth) => {
+      if (!updated) {
+        return;
       }
 
       if (parent == null) {
-        quaternion.copy(rotation);
+        body.quaternion.copy(quaternion);
       } else {
-        const { type: pt, collider: pc, quaternion: pq } = parent;
-
-        quaternion.multiplyQuaternions(pq, rotation);
-
-        if (type === 'arm') {
-          collider.rotateCapsule(quaternion);
-
-          if (pt === 'arm') {
-            this.#v1.copy(pc.getProp('end'));
-          } else {
-            pc.getCenter(this.#v1);
-          }
-
-          this.#v2.copy(position);
-          this.#v2.applyQuaternion(pq);
-
-          collider.moveTo(this.#v1);
-          collider.moveBy(this.#v2);
-        } else {
-          if (pt === 'arm') {
-            this.#v1.copy(pc.getProp('end'));
-          } else {
-            pc.getCenter(this.#v1);
-          }
-
-          this.#v2.copy(position);
-          this.#v2.applyQuaternion(pq);
-
-          collider.moveTo(this.#v2);
-          collider.moveBy(this.#v1);
-        }
+        body.quaternion.copy(rotation);
       }
+
+      this.updated = false;
     });
   }
 
@@ -321,6 +329,19 @@ class Collidable {
     }
 
     return flag;
+  }
+
+  getChildByName(name) {///////////
+    let child = null;
+
+    this.traverse((col) => {
+      if (col.name === name) {
+        child = col;
+        return false;
+      }
+    });
+
+    return child;
   }
 
   static init(root) {

@@ -17,7 +17,7 @@ import {
   UrgentActions,
 } from './constants';
 import { Characters } from './data/entities';
-import { Commands } from './data/skeletals';
+import { Clips } from './data/skeletals';
 import Character from './character';
 import Collidable from './collidable';
 import { Game } from '../settings';
@@ -75,6 +75,12 @@ class Player extends Character {
 
     this.input = this.input.bind(this);
     this.setLookRot = this.setLookRot.bind(this);
+
+    const { body: { size: { height, radius } } } = this.collidable.params;
+
+    this.data.cameraOffsetY = height * 0.5;////////////
+    this.data.arrowOffsetY = height * 0.25;////////////
+    this.data.arrowOffsetZ = radius * 2;/////////
   }
 
   setControls(camera, controls) {
@@ -108,7 +114,7 @@ class Player extends Character {
   setCoords(coords) {
     super.setCoords(coords);
 
-    this.publish('setBodyRotation', this.collidable.quaternion);
+    this.publish('setBodyRotation', this.rotation);
   }
 
   setLookRot(rot, offset) {
@@ -151,7 +157,7 @@ class Player extends Character {
       method?.('jump');
     }
 
-    this.collidable.velocity.y = this.data.stats.jumpPower * value;
+    this.velocity.y = this.data.stats.jumpPower * value;
   }
 
   moveForward(deltaTime, value, action = -1) {
@@ -174,11 +180,10 @@ class Player extends Character {
       accel = airMoveAccel;
     }
 
-    this.#forwardA.copy(InitialDir).applyQuaternion(this.collidable.rotation);
+    this.#forwardA.copy(InitialDir).applyQuaternion(this.rotation);
     this.#sideA.crossVectors(this.#forwardA, Axis.y);
     this.#forwardA.applyAxisAngle(this.#sideA, sign(-value) * Game.RAD30);
-
-    this.collidable.velocity.add(
+    this.velocity.add(
       this.#forwardA.multiplyScalar(accel * value * deltaTime),
     );
   }
@@ -220,17 +225,16 @@ class Player extends Character {
       accel = airMoveAccel;
     }
 
-    // this.#forwardB.copy(InitialDir).applyEuler(this.collidable.rotation);
-    this.#forwardB.copy(InitialDir).applyQuaternion(this.collidable.rotation);
+    this.#forwardB.copy(InitialDir).applyQuaternion(this.rotation);
     this.#sideB.crossVectors(this.#forwardB, Axis.y).normalize();
     this.#sideB.applyAxisAngle(this.#forwardB, sign(value) * Game.RAD30);
-    this.collidable.velocity.add(
+    this.velocity.add(
       this.#sideB.multiplyScalar(accel * value * moveSideCoef * deltaTime),
     );
   }
 
   trigger(value) {
-    this.startAnimation(Commands.JabPunch);
+    this.startAnimation(Clips.JabPunch);
   }
 
   input(actions) {
@@ -376,11 +380,13 @@ class Player extends Character {
 
     if (this.#deltaTheta !== 0) {
       this.#quat.setFromAxisAngle(Axis.y, this.#deltaTheta);
-      this.collidable.updateDeltaRotation(this.#quat);
+      this.rotateBy(this.#quat);
 
       if (this.hasControls) {
-        this.publish('onRotate', this.collidable.quaternion, this.#deltaTheta);
+        this.publish('onRotate', this.rotation, this.#deltaTheta);
       }
+
+      this.collidable.applyRotation();
     }
 
     this.#deltaTheta = 0;
@@ -390,19 +396,21 @@ class Player extends Character {
     super.postUpdate(deltaTime);
 
     if (this.hasControls) {
-      const { stats } = this.data;
+      const { radius, height } = this.data;
       const { position: cpos } = this.camera;
-      const { collider } = this.collidable;
-      collider.getCenter(this.#pos);
+      const { collider, quaternion } = this.collidable;
+      this.#pos.copy(this.position);
 
-      if (collider.type === 'capsule') {
+      if (collider.shape === 'capsule') {
         this.#normal.copy(collider.getProp('normal'));
-      } else {
-        this.#normal.set(0, 0, 0);
+      } else if (collider.shape === 'sphere') {
+        this.#normal.copy(collider.axis).applyQuaternion(quaternion).normalize();
       }
 
+      const cameraOffsetY = 
+
       cpos.copy(this.#pos);
-      cpos.addScaledVector(this.#normal, stats.cameraOffsetY);
+      cpos.addScaledVector(this.#normal, this.data.cameraOffsetY);
 
       if (this.lookRotation.theta === 0 && this.lookRotation.phi === HalfPI) {
         if (this.arrow.visible) {
@@ -416,18 +424,18 @@ class Player extends Character {
         }
 
         apos.copy(this.#pos);
-        apos.addScaledVector(this.#normal, stats.arrowOffsetY);
+        apos.addScaledVector(this.#normal, this.data.arrowOffsetY);
 
         this.#arrowDir
           .copy(InitialDir)
-          .applyQuaternion(this.collidable.rotation)
+          .applyQuaternion(this.rotation)
           .applyAxisAngle(Axis.y, this.lookRotation.theta);
 
         const side = this.#sideC.crossVectors(this.#arrowDir, Axis.y);
         this.#arrowDir.applyAxisAngle(side, this.lookRotation.phi - HalfPI);
 
-        apos.addScaledVector(this.#arrowDir, stats.arrowOffsetZ);
-        this.arrow.quaternion.copy(this.collidable.quaternion);
+        apos.addScaledVector(this.#arrowDir, this.data.arrowOffsetZ);
+        this.arrow.quaternion.copy(this.rotation);
       }
     }
   }

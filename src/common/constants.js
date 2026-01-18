@@ -40,4 +40,15 @@ export const HeartbeatInterval = 5000;
 
 export const WtPaths = ['/wt/debug'];
 
+export const KeyPressMaxCount = 4;
+export const PointerEventSize = 8;
+export const ButtonSize = 17;
+export const AxisSize = 6;
+export const SharedDataSize = 2;
+export const SharedDataIndex = {
+  frameCount: 0,
+  time: 1,
+};
+export const HighFramerateCoef = 1;
+export const LowFramerateCoef = 2;
 

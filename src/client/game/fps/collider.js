@@ -1,10 +1,17 @@
 import { Vector3, Sphere, Box3, Euler, Quaternion, Spherical } from 'three';
 
 import Capsule from './capsule';
+import { Axis } from './settings';
 import { States } from './constants';
 
 const { PI } = Math;
 const safeProps = ['radius', 'height', 'normal', 'center', 'start', 'end'];
+
+const roleMap = new Map([
+  ['arm', { axis: Axis.z, rotationCenter: 'start' }],
+  ['joint', { axis: Axis.z, rotationCenter: 'center' }],
+  ['object', { axis: Axis.y, rotationCenter: 'center' }],
+]);
 
 class Collider {
   #enabled = true;
@@ -15,30 +22,34 @@ class Collider {
 
   #v2 = new Vector3();
 
-  #v3 = new Vector3();
-
-  #size = new Vector3();
-
   #bounds = null;
 
-  constructor(object, bounds, stats = {}, role = 'object') {
+  constructor(object, bounds, size = {}, stats = {}, role = 'object') {
     this.object = object;
     this.#bounds = bounds;
+    this.size = size;
     this.stats = stats;
 
-    this.role = role;
+    const { rotationCenter, axis } = roleMap.get(role);
+    this.rotationCenter = rotationCenter;
+    this.axis = axis;
 
     if (bounds instanceof Capsule) {
-      this.type = 'capsule';
+      this.shape = 'capsule';
     } else if (bounds instanceof Sphere) {
-      this.type = 'sphere';
+      this.shape = 'sphere';
     } else if (bounds instanceof Box3) {
-      this.type = 'aabb';
+      this.shape = 'aabb';
     }
 
-    if (role === 'arm') {
+    const euler = new Euler(PI * 0.5, 0, 0);
+    const quat = new Quaternion().setFromEuler(euler);
+
+    if (this.shape === 'capsule' && this.axis === Axis.z) {
       this.#v1.set(0, this.#bounds.height * 0.5, 0);
       this.#bounds.translate(this.#v1);
+
+      this.#bounds.setRotation(quat, Axis.y, 'start');
     }
   }
 
@@ -66,13 +77,13 @@ class Collider {
     return undefined;
   }
 
-  getCenter(target, ofRotation = false) {
-    if (this.type === 'sphere') {
+  getCenter(target, rotationCenter = 'center') {
+    if (this.shape === 'sphere') {
       return target.copy(this.#bounds.center);
     }
 
-    if (this.type === 'capsule' || this.type === 'aabb') {
-      if (ofRotation) {
+    if (this.shape === 'capsule' || this.shape === 'aabb') {
+      if (rotationCenter === 'start') {
         return target.copy(this.#bounds.start);
       }
 
@@ -83,9 +94,9 @@ class Collider {
   }
 
   getBoundingBox(box) {
-    if (this.type === 'capsule' || this.type === 'sphere') {
+    if (this.shape === 'capsule' || this.shape === 'sphere') {
       this.#bounds.getBoundingBox(box);
-    } else if (this.type === 'aabb') {
+    } else if (this.shape === 'aabb') {
       box.copy(this.#bounds);
     }
   }
@@ -103,29 +114,29 @@ class Collider {
   }
 
   moveTo(vec) {
-    if (this.type === 'capsule' || this.type === 'aabb') {
-      this.getCenter(this.#v1, this.role === 'arm');
+    if (this.shape === 'capsule' || this.shape === 'aabb') {
+      this.getCenter(this.#v1, this.rotationCenter);
 
       this.#v2.subVectors(vec, this.#v1);
       this.#bounds.translate(this.#v2);
-    } else if (this.type === 'sphere') {
+    } else if (this.shape === 'sphere') {
       this.#v1.subVectors(vec, this.#bounds.center);
       this.#bounds.translate(this.#v1);
     }
   }
 
   moveBy(vec) {
-    if (this.type === 'capsule') {
+    if (this.shape === 'capsule') {
       this.#bounds.translate(vec);
-    } else if (this.type === 'sphere') {
+    } else if (this.shape === 'sphere') {
       this.#bounds.center.add(vec);
-    } else if (this.type === 'aabb') {
+    } else if (this.shape === 'aabb') {
       this.#bounds.translate(vec);
     }
   }
 
-  rotateCapsule(quaternion) {
-    this.#bounds.rotate(quaternion, this.role);
+  setCapsuleRotation(quaternion) {
+    this.#bounds.setRotation(quaternion, this.axis, this.rotationCenter);
   }
 }
 

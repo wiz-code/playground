@@ -1,4 +1,5 @@
 import {
+  Vector2,
   Box3,
   Vector3,
   Spherical,
@@ -8,7 +9,7 @@ import {
   Sphere,
   Quaternion,
 } from 'three';
-import { Game } from './settings';
+import { World } from './settings';
 import Capsule from './capsule';
 
 const { floor, random, abs, sqrt, min, max, sin, atan2 } = Math;
@@ -432,7 +433,7 @@ export const getPointsVertices = (vertices, normals) => {
     const key = `${vx1}:${vy1}:${vz1}`;
     const normal = normalMap.get(key);
 
-    vertex.add(normal);
+    vertex.add(normal.multiplyScalar(World.pointOffset));
     newVertices.push(vertex.x, vertex.y, vertex.z);
   }
 
@@ -459,3 +460,159 @@ const easeInQuart = (x) => x ** 4;
 const easeInExpo = (x) => (x === 0 ? 0 : 2 ** (10 * x - 10));
 const easeOutQuad = (x) => 1 - (1 - x) ** 2;
 const easeInOutQuad = (x) => (x < 0.5 ? 2 * x ** 2 : 1 - (-2 * x + 2) ** 2 / 2);
+
+export const closestPointLineToLine = ( function () {
+
+  // https://github.com/juj/MathGeoLib/blob/master/src/Geometry/Line.cpp#L56
+  const dir1 = /* @__PURE__ */ new Vector3();
+  const dir2 = /* @__PURE__ */ new Vector3();
+  const v02 = /* @__PURE__ */ new Vector3();
+  return function closestPointLineToLine( l1, l2, result ) {
+
+    const v0 = l1.start;
+    const v10 = dir1;
+    const v2 = l2.start;
+    const v32 = dir2;
+
+    v02.subVectors( v0, v2 );
+    dir1.subVectors( l1.end, l1.start );
+    dir2.subVectors( l2.end, l2.start );
+
+    // float d0232 = v02.Dot(v32);
+    const d0232 = v02.dot( v32 );
+
+    // float d3210 = v32.Dot(v10);
+    const d3210 = v32.dot( v10 );
+
+    // float d3232 = v32.Dot(v32);
+    const d3232 = v32.dot( v32 );
+
+    // float d0210 = v02.Dot(v10);
+    const d0210 = v02.dot( v10 );
+
+    // float d1010 = v10.Dot(v10);
+    const d1010 = v10.dot( v10 );
+
+    // float denom = d1010*d3232 - d3210*d3210;
+    const denom = d1010 * d3232 - d3210 * d3210;
+
+    let d, d2;
+    if ( denom !== 0 ) {
+
+      d = ( d0232 * d3210 - d0210 * d3232 ) / denom;
+
+    } else {
+
+      d = 0;
+
+    }
+
+    d2 = ( d0232 + d * d3210 ) / d3232;
+
+    result.x = d;
+    result.y = d2;
+
+  };
+
+} )();
+
+export const closestPointsSegmentToSegment = ( function () {
+
+  // https://github.com/juj/MathGeoLib/blob/master/src/Geometry/LineSegment.cpp#L187
+  const paramResult = /* @__PURE__ */ new Vector2();
+  const temp1 = /* @__PURE__ */ new Vector3();
+  const temp2 = /* @__PURE__ */ new Vector3();
+  return function closestPointsSegmentToSegment( l1, l2, target1, target2 ) {
+
+    closestPointLineToLine( l1, l2, paramResult );
+
+    let d = paramResult.x;
+    let d2 = paramResult.y;
+    if ( d >= 0 && d <= 1 && d2 >= 0 && d2 <= 1 ) {
+
+      l1.at( d, target1 );
+      l2.at( d2, target2 );
+
+      return;
+
+    } else if ( d >= 0 && d <= 1 ) {
+
+      // Only d2 is out of bounds.
+      if ( d2 < 0 ) {
+
+        l2.at( 0, target2 );
+
+      } else {
+
+        l2.at( 1, target2 );
+
+      }
+
+      l1.closestPointToPoint( target2, true, target1 );
+      return;
+
+    } else if ( d2 >= 0 && d2 <= 1 ) {
+
+      // Only d is out of bounds.
+      if ( d < 0 ) {
+
+        l1.at( 0, target1 );
+
+      } else {
+
+        l1.at( 1, target1 );
+
+      }
+
+      l2.closestPointToPoint( target1, true, target2 );
+      return;
+
+    } else {
+
+      // Both u and u2 are out of bounds.
+      let p;
+      if ( d < 0 ) {
+
+        p = l1.start;
+
+      } else {
+
+        p = l1.end;
+
+      }
+
+      let p2;
+      if ( d2 < 0 ) {
+
+        p2 = l2.start;
+
+      } else {
+
+        p2 = l2.end;
+
+      }
+
+      const closestPoint = temp1;
+      const closestPoint2 = temp2;
+      l1.closestPointToPoint( p2, true, temp1 );
+      l2.closestPointToPoint( p, true, temp2 );
+
+      if ( closestPoint.distanceToSquared( p2 ) <= closestPoint2.distanceToSquared( p ) ) {
+
+        target1.copy( closestPoint );
+        target2.copy( p2 );
+        return;
+
+      } else {
+
+        target1.copy( p );
+        target2.copy( closestPoint2 );
+        return;
+
+      }
+
+    }
+
+  };
+
+} )();

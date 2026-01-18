@@ -47,7 +47,7 @@ class Obstacle extends Entity {
       return;
     }
 
-    const { velocity } = this.collidable;
+    const { velocity } = this;
     velocity.y -= World.gravity * deltaTime;
     velocity.addScaledVector(velocity, damping[this.type]);
     // this.#dir.copy(this.velocity).normalize();
@@ -58,6 +58,7 @@ class Obstacle extends Entity {
     this.#dir.copy(this.#move).normalize();
     // this.rotation.setFromVector3(this.#dir);
 
+    this.position.add(this.#move);
     this.collidable.traverse(({ collider }) => {
       collider.moveBy(this.#move);
     });
@@ -69,11 +70,12 @@ class Obstacle extends Entity {
       position,
     } = this;
 
+    body.position.copy(this.position);
     // position.add(this.relPos);
     // this.#pos.copy(position);
-    this.collidable.collider.getCenter(this.#pos);
+    //this.collidable.collider.getCenter(this.#pos);
     // this.#pos.y += this.data.centerHeight;
-    body.position.copy(this.#pos);
+    //body.position.copy(this.#pos);
     // body.rotation.y = this.rotation.theta;////////////
 
     /* this.#dir.setFromSpherical(this.rotation);

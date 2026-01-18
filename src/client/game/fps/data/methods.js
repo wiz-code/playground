@@ -69,8 +69,8 @@ const Handlers = [
     'start-animation', /// ////////
     function (event) {
       const { parent: target, params } = event;
-      const { command } = params;
-      target.startAnimation(command);
+      const { clip } = params;
+      target.startAnimation(clip);
     },
   ],
   [

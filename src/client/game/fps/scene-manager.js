@@ -1,5 +1,6 @@
 import { WebGLRenderer, WebGLRenderTarget, Vector2, Color, LinearFilter, RGBAFormat } from 'three';
-// import { WebGPURenderer } from 'three/webgpu';
+//import { WebGPURenderer } from 'three/webgpu';
+//import WebGPU from 'three/addons/capabilities/WebGPU.js';
 //import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
 //import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
 //import { FXAAPass } from 'three/addons/postprocessing/FXAAPass.js';

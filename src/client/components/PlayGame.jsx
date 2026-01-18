@@ -27,7 +27,7 @@ import { getNextScene } from '../utils';
 
 const { actions: settingActions } = settingSlice;
 const { actions: gameActions } = gameSlice;
-const { Games, HighFramerateCoef, LowFramerateCoef } = Common;
+const { Games } = Common;
 
 const gameMap = new Map(Games);
 const monospaced = '"MS Gothic", "TakaoGothic", "Noto Sans CJK JP", Monospace';
@@ -165,6 +165,20 @@ function PlayGame() {
     }
   }, [ref.current]);
 
+  const onVisibleChange = useCallback(() => {
+    if (game == null) {
+      return;
+    }
+
+    if (!settingPage) {
+      if (document.visibilityState === 'hidden') {
+        game.pause();
+      } else if (document.visibilityState === 'visible') {
+        game.start();
+      }
+    }
+  }, [game, settingPage]);
+
   useEffect(() => {
     dispatch(gameActions.setScene('play'));
 
@@ -203,7 +217,7 @@ function PlayGame() {
 
     return () => {
       // TODO: クリーンアップ処理
-      gameObject.stop(true);
+      gameObject.stop();
       gameObject.dispose();
       setGame(null);
       dispatch(gameActions.resetGameState());
@@ -245,7 +259,7 @@ function PlayGame() {
     if (settingPage) {
       game.pause();
     } else {
-      game.start(true);
+      game.start();
     }
   }, [settingPage]);
 
@@ -256,7 +270,17 @@ function PlayGame() {
 
     game.setParam('framerateCoef', framerateCoef, true);
   }, [framerateCoef]);
+
+  useEffect(() => {
+    document.addEventListener('visibilitychange', onVisibleChange);
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibleChange);
+    };
+  }, [onVisibleChange]);
+
 console.log('PlayGame:rendererd')
+
   return (
     <Box sx={{ userSelect: 'none', height: '100svh' }}>
       <Head content={content} />

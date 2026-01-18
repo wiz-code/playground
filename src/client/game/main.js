@@ -1,17 +1,12 @@
 import { debounce } from 'throttle-debounce';
 import Stats from 'three/addons/libs/stats.module.js';
+///// for development ///////
+import GUI from 'lil-gui';
+////////////
 
-import { Game as GameSettings } from './settings';
-import Common from '../../common.json';
-import Publisher from './publisher';
-
-import DomEvents from './dom-events';
-import AudioManager from './audio-manager';
-import TextureManager from './texture-manager';
-// import Loop from './async-loop';
-
-const { floor } = Math;
-const {
+import { InputKeys } from './constants';
+import { Game as GameSettings, BindedKeys } from './settings';
+import {
   KeyPressMaxCount,
   PointerEventSize,
   ButtonSize,
@@ -19,7 +14,15 @@ const {
   SharedDataSize,
   SharedDataIndex,
   HighFramerateCoef,
-} = Common;
+} from '../../common/constants';
+import Publisher from './publisher';
+import Loop from './loop';
+
+import DomEvents from './dom-events';
+import AudioManager from './audio-manager';
+import TextureManager from './texture-manager';
+
+const { floor } = Math;
 
 const KeyEventSize = KeyPressMaxCount * 2;
 const eventValueIndex = new Map([
@@ -32,6 +35,10 @@ const eventValueIndex = new Map([
   ['key-down', 0], // key1, key2, key3, key4
   ['key-up', KeyPressMaxCount], // key1, key2, key3, key4
 ]);
+
+//// for development ////
+const gui = new GUI();
+//////////////////
 
 class Game extends Publisher {
   #gamepadIndex = -1;
@@ -84,12 +91,16 @@ class Game extends Publisher {
         data: new Float32Array(sabData),
 
         waitMain: null,
+        waitStats: null,
         waitWorker: null,
       };
 
       if (canUseWaitAsync) {
         const sabWaitMain = new SharedArrayBuffer(4);
         this.#sab.waitMain = new Int32Array(sabWaitMain);
+
+        const sabWaitStats = new SharedArrayBuffer(4);
+        this.#sab.waitStats = new Int32Array(sabWaitStats);
 
         const sabWaitWorker = new SharedArrayBuffer(4);
         this.#sab.waitWorker = new Int32Array(sabWaitWorker);
@@ -123,12 +134,77 @@ class Game extends Publisher {
     };
 
     this.init(data);
+
+    if (crossOriginIsolated && canUseWaitAsync) {
+      this.updateStats();
+    }
+
+    this.update = this.update.bind(this);
+    this.loop = new Loop(this.update, false, 'timeout');
+
+    ///////////for develop////////
+    const props = {
+      stateJabStart: {
+        leftShoulder: { angleX: 0, angleY: 0, angleZ: 0 },
+        leftElbow: { angleX: 0, angleY: 0, angleZ: 0 },
+      },
+      stateJabFinish: {
+        leftShoulder: { angleX: 0, angleY: 0, angleZ: 0 },
+        leftElbow: { angleX: 0, angleY: 0, angleZ: 0 },
+      },
+    };
+
+    const StateJabStartGui = gui.addFolder('State JabStart');
+    const LeftShoulderGui1 = StateJabStartGui.addFolder('leftShoulder');
+    const LeftElbowGui1 = StateJabStartGui.addFolder('leftElbow');
+    LeftShoulderGui1.add(props.stateJabStart.leftShoulder, 'angleX', -180, 180, 1).onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: ['state-jab-start', 'left-shoulder', 'x', value] });
+    });
+    LeftShoulderGui1.add(props.stateJabStart.leftShoulder, 'angleY', -180, 180, 1).onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: ['state-jab-start', 'left-shoulder', 'y', value] });
+    });
+    LeftShoulderGui1.add(props.stateJabStart.leftShoulder, 'angleZ', -180, 180, 1).onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: ['state-jab-start', 'left-shoulder', 'z', value] });
+    });
+    
+    LeftElbowGui1.add(props.stateJabStart.leftElbow, 'angleX', -180, 180, 1).onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: ['state-jab-start', 'left-elbow', 'x', value] });
+    });
+    LeftElbowGui1.add(props.stateJabStart.leftElbow, 'angleY', -180, 180, 1).onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: ['state-jab-start', 'left-elbow', 'y', value] });
+    });
+    LeftElbowGui1.add(props.stateJabStart.leftElbow, 'angleZ', -180, 180, 1).onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: ['state-jab-start', 'left-elbow', 'z', value] });
+    });
+
+    const StateJabFinishGui = gui.addFolder('State JabFinish');
+    const LeftShoulderGui2 = StateJabFinishGui.addFolder('leftShoulder');
+    const LeftElbowGui2 = StateJabFinishGui.addFolder('leftElbow');
+    LeftShoulderGui2.add(props.stateJabFinish.leftShoulder, 'angleX', -180, 180, 1).onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: ['state-jab-finish', 'left-shoulder', 'x', value] });
+    });
+    LeftShoulderGui2.add(props.stateJabFinish.leftShoulder, 'angleY', -180, 180, 1).onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: ['state-jab-finish', 'left-shoulder', 'y', value] });
+    });
+    LeftShoulderGui2.add(props.stateJabFinish.leftShoulder, 'angleZ', -180, 180, 1).onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: ['state-jab-finish', 'left-shoulder', 'z', value] });
+    });
+    
+    LeftElbowGui2.add(props.stateJabFinish.leftElbow, 'angleX', -180, 180, 1).onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: ['state-jab-finish', 'left-elbow', 'x', value] });
+    });
+    LeftElbowGui2.add(props.stateJabFinish.leftElbow, 'angleY', -180, 180, 1).onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: ['state-jab-finish', 'left-elbow', 'y', value] });
+    });
+    LeftElbowGui2.add(props.stateJabFinish.leftElbow, 'angleZ', -180, 180, 1).onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: ['state-jab-finish', 'left-elbow', 'z', value] });
+    });
   }
 
   async init(data) {
     let imageBitmap = await this.textureManager.toImageBitmap();
 
-    this.worker = new Worker(new URL('./init-worker.js', import.meta.url));
+    this.worker = new Worker(new URL('./worker-init.js', import.meta.url));
     this.worker.postMessage(
       {
         type: 'init',
@@ -205,7 +281,8 @@ class Game extends Publisher {
       });
     };
 
-    const onMessage = (event) => {
+    //const onMessage = (event) => {
+    const onMessage = function (event) {//////////////
       switch (event.data.type) {
         case 'loaded': {
           window.addEventListener('gamepadconnected', this.onGamepadConnected);
@@ -293,9 +370,39 @@ class Game extends Publisher {
           break;
         }
 
+        case 'start': {
+          if (!this.loop.isActive()) {
+            this.start(false);
+          }
+
+          break;
+        }
+
+        case 'pause': {
+          if (this.loop.isActive()) {
+            this.pause(false);
+          }
+
+          break;
+        }
+
+        case 'stop': {
+          if (this.loop.isActive()) {
+            this.stop(false);
+          }
+
+          break;
+        }
+
         case 'update': {
-          const [frameCount, time] = event.data.value;
-          this.update(frameCount, time);
+          if (!this.params.crossOriginIsolated) {
+            const [frameCount, time] = event.data.value;
+            this.#frameCount = frameCount;
+            this.#elapsedTime = time;
+          }
+
+          this.updateStats();
+          
           break;
         }
 
@@ -310,12 +417,6 @@ class Game extends Publisher {
     window.addEventListener('resize', this.onResize);
     window.addEventListener('beforeunload', this.onBeforeUnload);
     this.worker.addEventListener('message', this.onMessage);
-
-    const { crossOriginIsolated, canUseWaitAsync } = this.params;
-
-    if (crossOriginIsolated && canUseWaitAsync) {
-      this.update();
-    }
   }
 
   onEventDispatched(event, ...values) {
@@ -359,7 +460,8 @@ class Game extends Publisher {
 
       case 'key-down':
       case 'key-up': {
-        const [key, shiftKey, altKey] = values;
+        const [code] = values;
+        const key = InputKeys[BindedKeys[code]];
 
         for (let i = offset; i < offset + KeyPressMaxCount; i += 1) {
           const value = keyValues[i];
@@ -393,17 +495,31 @@ class Game extends Publisher {
     }
   }
 
-  start(active = false) {
+  start(active = true) {
+    if (!this.loop.isActive()) {
+      this.loop.start();
+    }
+
     if (active) {
       this.worker.postMessage({ type: 'start' });
     }
   }
 
-  pause() {
-    this.worker.postMessage({ type: 'pause' });
+  pause(active = true) {
+    if (this.loop.isActive()) {
+      this.loop.stop();
+    }
+
+    if (active) {
+      this.worker.postMessage({ type: 'pause' });
+    }
   }
 
-  stop(active = false) {
+  stop(active = true) {
+    if (this.loop.isActive()) {
+      this.loop.stop();
+    }
+
     if (active) {
       this.worker.postMessage({ type: 'stop' });
     }
@@ -425,6 +541,10 @@ class Game extends Publisher {
     this.container.removeChild(this.canvas);
 
     this.worker.postMessage({ type: 'dispose' });
+
+    //////for develop///////
+    gui.destroy();
+    ////////////////////////
   }
 
   setParam(name, value, sendToWorker = false) {
@@ -439,36 +559,36 @@ class Game extends Publisher {
     this.worker.postMessage({ type: 'send-param', value: [name, value] });
   }
 
+  async updateStats() {
+    this.stats.update();
+
+    const { crossOriginIsolated, canUseWaitAsync } = this.params;
+
+    if (crossOriginIsolated && canUseWaitAsync) {
+      const wait = Atomics.waitAsync(this.#sab.waitStats, 0, 0);
+      const state = await wait.value;
+
+      this.updateStats();
+    }
+  }
+
   async update(frameCount, time) {
     const { crossOriginIsolated, canUseWaitAsync } = this.params;
 
     if (crossOriginIsolated && canUseWaitAsync) {
-      const wait = Atomics.waitAsync(this.#sab.waitMain, 0, 0);
-      const state = await wait.value;
-
       this.#frameCount = this.#sab.data[SharedDataIndex.frameCount];
       this.#elapsedTime = this.#sab.data[SharedDataIndex.time];
-    } else {
-      this.#frameCount = frameCount;
-      this.#elapsedTime = time;
     }
 
-    if (this.#statsEnabled) {
+    /*if (this.#statsEnabled) {
       this.stats.update();
-    }
+    }*/
 
     if (this.#frameCount % GameSettings.SkipFrames === 0) {
       this.callbacks.setElapsedTime(this.#elapsedTime);
     }
 
     this.updateMain();
-
-    if (crossOriginIsolated && canUseWaitAsync) {
-      this.update();
-      Atomics.notify(this.#sab.waitWorker, 0);
-    } else {
-      this.worker.postMessage({ type: 'main-updated' });
-    }
   }
 
   updateMain() {

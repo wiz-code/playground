@@ -1,23 +1,21 @@
-import { Spherical, Vector3 /*  */, Euler } from 'three';
+import { Spherical, Vector3, Euler } from 'three';
 
-import Common from '../../../common.json';
+import { KeyPressMaxCount } from '../../../common/constants';
 import Publisher from '../publisher';
 import { Game } from '../settings';
 import { Controls, Screen, GameColor, InitialDir } from './settings';
-import { InputKeys, MashKeys, Pointers, Actions } from './constants';
+import { InputKeys } from '../constants';
+import { Pointers, Actions } from './constants';
 
 const { floor, abs, sin, cos, sign, max, min, PI } = Math;
 const degToRadCoef = PI / 180;
 const { EPS, RAD1, HalfPI } = Game;
-const { KeyPressMaxCount } = Common;
 
 const {
   SightColor: sightColor,
   IndicatorColor: indicatorColor,
   SightLinesColor: sightLinesColor,
 } = GameColor;
-
-const mashKeys = new Set(MashKeys.map((key) => InputKeys[key]));
 
 const nonRepeatableKeyList = ['Space'];
 const nonRepeatablePointerList = ['left'];
@@ -159,7 +157,7 @@ class FirstPersonControls extends Publisher {
         }
 
         if (button === 1) {
-          //
+          this.#resetWheel = true;
         }
 
         if (button === 2) {
@@ -171,7 +169,7 @@ class FirstPersonControls extends Publisher {
 
       case 'pointerup': {
         if (button === 1) {
-          this.#resetWheel = true;
+          //this.#resetWheel = true;
         } else if (button === 2) {
           this.#povLock = false;
           this.#resetPointer = true;
@@ -201,8 +199,8 @@ class FirstPersonControls extends Publisher {
       mvButton,
       wheel,
     ] = pointerEvents;
-    const keyDownEvents = keyEvents.slice(0, 4);
-    const keyUpEvents = keyEvents.slice(4);
+    const keyDownEvents = keyEvents.slice(0, KeyPressMaxCount);
+    const keyUpEvents = keyEvents.slice(KeyPressMaxCount);
 
     if (pointerDown !== 0) {
       this.#pointers.add(pdButton);
@@ -259,73 +257,39 @@ class FirstPersonControls extends Publisher {
       this.#actions.set(Actions.jump, 1);
     }
 
-    if (this.#keys.has(InputKeys.KeyW) || this.#keys.has(InputKeys.ArrowUp)) {
+    if (this.#keys.has(InputKeys.KeyW)) {
       if (this.#keys.has(InputKeys.Shift)) {
         this.#actions.set(Actions.sprint, 1);
       } else if (this.#keys.has(InputKeys.KeyC)) {
         this.#actions.set(Actions.quickMoveForward, 1);
         this.#keys.delete(InputKeys.KeyC);
-
-        if (this.#keys.has(InputKeys.KeyW)) {
-          this.#keys.delete(InputKeys.KeyW);
-        }
-
-        if (this.#keys.has(InputKeys.ArrowUp)) {
-          this.#keys.delete(InputKeys.ArrowUp);
-        }
+        this.#keys.delete(InputKeys.KeyW);
       } else {
         this.#actions.set(Actions.moveForward, 1);
       }
-    } else if (
-      this.#keys.has(InputKeys.KeyS) ||
-      this.#keys.has(InputKeys.ArrowDown)
-    ) {
+    } else if (this.#keys.has(InputKeys.KeyS)) {
       if (this.#keys.has(InputKeys.KeyC)) {
         this.#actions.set(Actions.quickMoveBackward, -1);
         this.#keys.delete(InputKeys.KeyC);
-
-        if (this.#keys.has(InputKeys.KeyS)) {
-          this.#keys.delete(InputKeys.KeyS);
-        }
-
-        if (this.#keys.has(InputKeys.ArrowDown)) {
-          this.#keys.delete(InputKeys.ArrowDown);
-        }
+        this.#keys.delete(InputKeys.KeyS);
       } else {
         this.#actions.set(Actions.moveBackward, -1);
       }
     }
 
-    if (this.#keys.has(InputKeys.KeyA) || this.#keys.has(InputKeys.ArrowLeft)) {
+    if (this.#keys.has(InputKeys.KeyA)) {
       if (this.#keys.has(InputKeys.KeyC)) {
         this.#actions.set(Actions.quickTurnLeft, 1);
         this.#keys.delete(InputKeys.KeyC);
-
-        if (this.#keys.has(InputKeys.KeyA)) {
-          this.#keys.delete(InputKeys.KeyA);
-        }
-
-        if (this.#keys.has(InputKeys.ArrowLeft)) {
-          this.#keys.delete(InputKeys.ArrowLeft);
-        }
+        this.#keys.delete(InputKeys.KeyA);
       } else {
         this.#actions.set(Actions.rotateLeft, 1);
       }
-    } else if (
-      this.#keys.has(InputKeys.KeyD) ||
-      this.#keys.has(InputKeys.ArrowRight)
-    ) {
+    } else if (this.#keys.has(InputKeys.KeyD)) {
       if (this.#keys.has(InputKeys.KeyC)) {
         this.#actions.set(Actions.quickTurnRight, -1);
         this.#keys.delete(InputKeys.KeyC);
-
-        if (this.#keys.has(InputKeys.KeyD)) {
-          this.#keys.delete(InputKeys.KeyD);
-        }
-
-        if (this.#keys.has(InputKeys.ArrowRight)) {
-          this.#keys.delete(InputKeys.ArrowRight);
-        }
+        this.#keys.delete(InputKeys.KeyD);
       } else {
         this.#actions.set(Actions.rotateRight, -1);
       }
@@ -335,10 +299,7 @@ class FirstPersonControls extends Publisher {
       if (this.#keys.has(InputKeys.KeyC)) {
         this.#actions.set(Actions.quickMoveLeft, -1);
         this.#keys.delete(InputKeys.KeyC);
-
-        if (this.#keys.has(InputKeys.KeyQ)) {
-          this.#keys.delete(InputKeys.KeyQ);
-        }
+        this.#keys.delete(InputKeys.KeyQ);
       } else {
         this.#actions.set(Actions.moveLeft, -1);
       }
@@ -346,10 +307,7 @@ class FirstPersonControls extends Publisher {
       if (this.#keys.has(InputKeys.KeyC)) {
         this.#actions.set(Actions.quickMoveRight, 1);
         this.#keys.delete(InputKeys.KeyC);
-
-        if (this.#keys.has(InputKeys.KeyE)) {
-          this.#keys.delete(InputKeys.KeyE);
-        }
+        this.#keys.delete(InputKeys.KeyE);
       } else {
         this.#actions.set(Actions.moveRight, 1);
       }
@@ -456,23 +414,6 @@ class FirstPersonControls extends Publisher {
         this.yawIndicatorRadius * sin(lookRotation.theta + HalfPI);
       pitchIndicator.position.y = posY;
     } else {
-      /* if (lookRotation.phi !== 0) {
-        if (abs(lookRotation.phi) < restoreMinAngle) {
-          lookRotation.phi = 0;
-        } else {
-          const rx =
-            -lookRotation.phi * deltaTime * restoreSpeed +
-            sign(-lookRotation.phi) * restoreMinAngle;
-          lookRotation.phi += rx;
-        }
-
-        if (pitchIndicator.material.color !== indicatorColor.normal) {
-          pitchIndicator.material.color = indicatorColor.normal;
-        }
-
-        const posY = (this.gaugeHalfY * lookRotation.phi) / HalfPI;
-        pitchIndicator.position.y = posY;
-      } */
       if (lookRotation.phi !== HalfPI) {
         const diff = lookRotation.phi - HalfPI;
 
@@ -488,7 +429,6 @@ class FirstPersonControls extends Publisher {
           pitchIndicator.material.color = indicatorColor.normal;
         }
 
-        // const posY = (this.gaugeHalfY * lookRotation.phi) / HalfPI;
         const posY =
           this.gaugeHalfY *
           ((lookRotation.phi - HalfPI) / this.verticalAngle.max);
@@ -577,11 +517,10 @@ class FirstPersonControls extends Publisher {
 
     this.publish('setLookRot', lookRotation, this.#wheel);
 
-    const posY = (-this.#wheel / HalfPI) * this.viewHalfY * 2.4;
+    const posY = (this.#wheel / HalfPI) * this.viewHalfY * 2.4;
     this.povSightLines.position.setY(posY);
 
-    // this.camera.rotation.x = lookRotation.phi + this.#wheel;
-    this.camera.rotation.x = lookRotation.phi - HalfPI + this.#wheel;
+    this.camera.rotation.x = lookRotation.phi - HalfPI - this.#wheel;
     this.camera.rotation.y = lookRotation.theta + this.#bodyRotation.theta + PI;
   }
 }

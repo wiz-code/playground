@@ -116,6 +116,9 @@ export const createGrid = ({
     height: heightSegments * World.spacing * 0.5,
     depth: depthSegments * World.spacing * 0.5,
   };
+  const halfSpacing = World.spacing * 0.5;
+  const geometry = new BufferGeometry();
+  let count1 = 0, count2 = 0;
 
   for (let i = 0, l = widthSegments + 1; i < l; i += 1) {
     for (let j = 0, m = heightSegments + 1; j < m; j += 1) {
@@ -124,17 +127,36 @@ export const createGrid = ({
         const y = j * World.spacing - halfSize.height;
         const z = k * World.spacing - halfSize.depth;
         vertices.push(x, y, z);
+        count1 += 1;
       }
     }
   }
 
-  const geometry = new BufferGeometry();
+  geometry.addGroup(0, count1, 0);
+
+  for (let i = 0, l = widthSegments * 2 + 1; i < l; i += 1) {
+    for (let j = 0, m = heightSegments * 2 + 1; j < m; j += 1) {
+      for (let k = 0, n = depthSegments * 2 + 1; k < n; k += 1) {
+        if (i % 2 !== 0 || j % 2 !== 0 || k % 2 !== 0) {
+          const x = i * halfSpacing - halfSize.width;
+          const y = j * halfSpacing - halfSize.height;
+          const z = k * halfSpacing - halfSize.depth;
+          count2 += 1;
+          vertices.push(x, y, z);
+        }
+      }
+    }
+  }
+
+  geometry.addGroup(count1, count1 + count2, 1);
+
   geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
   geometry.computeBoundingSphere();
 
-  const material = new PointsMaterial({
+  const pointSize = World.pointSize / devicePixelRatio;
+  const gridMat = new PointsMaterial({
     color: Grid.color,
-    size: World.pointSize,
+    size: pointSize,
     map: self.texture.get('point'),
     blending: NormalBlending,
     depthTest: true,
@@ -142,7 +164,11 @@ export const createGrid = ({
     alphaTest: 0.5,
   });
 
-  const grid = new Points(geometry, material);
+  const findGridMat = gridMat.clone();
+  findGridMat.size =  pointSize / 2;
+  findGridMat.map = self.texture.get('pointThin');
+
+  const grid = new Points(geometry, [gridMat, findGridMat]);
 
   grid.position.set(
     position.x * World.spacing,
@@ -150,65 +176,8 @@ export const createGrid = ({
     position.z * World.spacing,
   );
 
-  grid.rotation.set(rotation.x, rotation.y, rotation.z, 'YXZ');
-
-  return grid;
-};
-
-export const createFineGrid = ({
-  widthSegments = 10,
-  heightSegments = 10,
-  depthSegments = 10,
-  position = { x: 0, y: 0, z: 0 },
-  rotation = { x: 0, y: 0, z: 0 },
-}) => {
-  const vertices = [];
-  const halfSize = {
-    width: widthSegments * World.spacing * 0.5,
-    height: heightSegments * World.spacing * 0.5,
-    depth: depthSegments * World.spacing * 0.5,
-  };
-
-  const spacing = World.spacing * 0.5;
-
-  for (let i = 0, l = widthSegments * 2 + 1; i < l; i += 1) {
-    for (let j = 0, m = heightSegments * 2 + 1; j < m; j += 1) {
-      for (let k = 0, n = depthSegments * 2 + 1; k < n; k += 1) {
-        if (i % 2 !== 0 || j % 2 !== 0 || k % 2 !== 0) {
-          const x = i * spacing - halfSize.width;
-          const y = j * spacing - halfSize.height;
-          const z = k * spacing - halfSize.depth;
-          vertices.push(x, y, z);
-        }
-      }
-    }
-  }
-
-  const geometry = new BufferGeometry();
-  geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
-  geometry.computeBoundingSphere();
-
-  const size = World.pointSize / 2;
-
-  const material = new PointsMaterial({
-    color: Grid.color,
-    size,
-    map: self.texture.get('pointThin'),
-    blending: NormalBlending,
-    depthTest: true,
-    transparent: true,
-    alphaTest: 0.5,
-  });
-
-  const grid = new Points(geometry, material);
-
-  grid.position.set(
-    position.x * World.spacing,
-    position.y * World.spacing,
-    position.z * World.spacing,
-  );
-
-  grid.rotation.set(rotation.x, rotation.y, rotation.z, 'YXZ');
+  //grid.rotation.set(rotation.x, rotation.y, rotation.z, 'YXZ');
+  grid.rotation.set(rotation.x, rotation.y, rotation.z, 'XYZ');/////////
 
   return grid;
 };
@@ -247,10 +216,10 @@ export const createGround = ({
     vertices[j + 1] = data[i] * bumpHeight;
   }
 
-  const pointsVertices = getPointsVertices(vertices, normals);
+  const pointsVertices = getPointsVertices(vertices, normals, World.pointSize);
 
-  geom.bvh = geom.surface.clone();
-  geom.bvh = geom.bvh.toNonIndexed();
+  //geom.bvh = geom.surface.clone();
+  geom.bvh = geom.surface.toNonIndexed();
   geom.bvh.deleteAttribute('uv'); // mergeGeometries()でattributesの数を揃える必要があるため
   geom.bvh.setIndex(null); // mergeGeometries()でindexの有無をどちらかに揃える必要があるため
 
@@ -280,7 +249,7 @@ export const createGround = ({
 
   mat.points = new PointsMaterial({
     color: color.points,
-    size: World.pointSize,
+    size: World.pointSize / devicePixelRatio,
     map: self.texture.get('point'),
     blending: NormalBlending,
     alphaTest: 0.5,
@@ -300,8 +269,9 @@ export const createGround = ({
 
   // BVHジオメトリーは先に回転、次に移動の順番にする必要がある
   group.rotation.set(rotation.x, rotation.y, rotation.z, 'YXZ');
-  geom.bvh.rotateY(rotation.y);
   geom.bvh.rotateX(rotation.x);
+  geom.bvh.rotateY(rotation.y);
+  //geom.bvh.rotateX(rotation.x);
   geom.bvh.rotateZ(rotation.z);
 
   const x = position.x * World.spacing;

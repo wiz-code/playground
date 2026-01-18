@@ -1,5 +1,5 @@
 import Publisher from './publisher';
-import { InputKeys } from './constants';
+//import { InputKeys } from './constants';
 
 const onContextmenu = (event) => {
   event.preventDefault();
@@ -79,7 +79,7 @@ class DomEvents extends Publisher {
   }
 
   onPointerDown(event) {
-    //this.lock(); // 開発中はコメントアウト
+    this.lock(); // 開発中はコメントアウト
     this.publish('dom-event', 'pointer-down', event.button);
   }
 
@@ -90,20 +90,20 @@ class DomEvents extends Publisher {
   onKeyDown(event) {
     event.preventDefault();
 
-    const key = InputKeys[event.code];
+    //const key = InputKeys[event.code];
 
     if (event.repeat) {
       return;
     }
 
-    this.publish('dom-event', 'key-down', key);
+    this.publish('dom-event', 'key-down', event.code);
   }
 
   onKeyUp(event) {
     event.preventDefault();
 
-    const key = InputKeys[event.code];
-    this.publish('dom-event', 'key-up', key);
+    //const key = InputKeys[event.code];
+    this.publish('dom-event', 'key-up', event.code);
   }
 
   dispose() {
