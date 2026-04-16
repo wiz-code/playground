@@ -331,17 +331,14 @@ export const Characters = [
       stats: {
         ...CommonStats,
 
-        //moveAccel: 180,
-        moveAccel: 40,
-        //airMoveAccel: 50,
-        airMoveAccel: 15,
+        moveAccel: 20, //40,
+        airMoveAccel: 7, //15,
 
         turnSpeed: 1.8,
         sprint: 2.5,
         urgencyMoveAccel: 8,
         rotAccel: 50,
 
-        //jumpPower: 120,
         jumpPower: 30,
         satelliteSpeed: 2,
       },
@@ -376,7 +373,7 @@ export const Characters = [
           //size: { radius: 2, height: 4 },
           size: { radius: 0.4, height: 0.8 },///////////
         },
-        children: [BodyParts.arm1],
+        //children: [BodyParts.arm1],
       },
     },
   ],

@@ -143,7 +143,35 @@ class Game extends Publisher {
     this.loop = new Loop(this.update, false, 'timeout');
 
     ///////////for develop////////
-    const props = {
+    /*const colors = {
+      '0': 0x7BB369,
+      '1': 0xffffff,
+      '2': 0xffffff,
+      '3': 0xffffff,
+    };
+
+    gui.addColor(colors, '0').onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: [0, value] });
+    });
+    gui.addColor(colors, '1').onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: [1, value] });
+    });
+    gui.addColor(colors, '2').onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: [2, value] });
+    });
+    gui.addColor(colors, '3').onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value: [3, value] });
+    });*/
+
+    const a = {
+      index: 0,
+    };
+
+    gui.add(a, 'index', 0, 409, 1).onChange((value) => {
+      this.worker.postMessage({ type: 'change-gui', value });
+    });
+
+    /*const props = {
       stateJabStart: {
         leftShoulder: { angleX: 0, angleY: 0, angleZ: 0 },
         leftElbow: { angleX: 0, angleY: 0, angleZ: 0 },
@@ -198,11 +226,11 @@ class Game extends Publisher {
     });
     LeftElbowGui2.add(props.stateJabFinish.leftElbow, 'angleZ', -180, 180, 1).onChange((value) => {
       this.worker.postMessage({ type: 'change-gui', value: ['state-jab-finish', 'left-elbow', 'z', value] });
-    });
+    });*/
   }
 
   async init(data) {
-    let imageBitmap = await this.textureManager.toImageBitmap();
+    const imageBitmap = await this.textureManager.toImageBitmap();
 
     this.worker = new Worker(new URL('./worker-init.js', import.meta.url));
     this.worker.postMessage(
@@ -214,7 +242,7 @@ class Game extends Publisher {
       [data.canvas],
     );
 
-    imageBitmap = null;
+    imageBitmap.forEach((value) => value.close());
 
     this.domEvents = new DomEvents(this.canvas);
     this.domEvents.subscribe('dom-event', this.onEventDispatched.bind(this));
@@ -233,6 +261,8 @@ class Game extends Publisher {
       }
     }
 
+    this.worker.postMessage({ type: 'create-controls' });
+
     if (this.#gamepadIndex !== -1) {
       this.domEvents.setEventHandlers(true);
       this.worker.postMessage({
@@ -241,7 +271,6 @@ class Game extends Publisher {
       });
     } else {
       this.domEvents.setEventHandlers(false);
-      this.worker.postMessage({ type: 'create-controls' });
     }
 
     const onGamepadConnected = (e) => {

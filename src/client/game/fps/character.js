@@ -37,9 +37,15 @@ class Character extends Entity {
 
   #rot = new Euler();
 
+  #v0 = new Vector3();
+
   #v1 = new Vector3();
 
   #v2 = new Vector3();
+
+  #a = new Vector3();
+
+  #side = new Vector3();
 
   constructor(game, name, subtype) {
     super(game, name, 'character', subtype, Characters);
@@ -79,7 +85,7 @@ class Character extends Entity {
 
   resetCoords() {
     Collidable.init(this.collidable);
-    this.velocity.set(0, 0, 0);
+    this.velocity.setScalar(0);
     this.#fallingDistance = 0;
   }
 
@@ -87,19 +93,23 @@ class Character extends Entity {
     return this.#fallingDistance;
   }
 
-  update(deltaTime, elapsedTime, damping) {
+  /*preUpdate() {
+    this.platform = null;
+  }*/
+
+  update(deltaTime, elapsedTime, { falling, damping }) {
     super.update(deltaTime, elapsedTime);
 
     const { velocity } = this;
 
     if (!this.#isGrounded) {
-      const falling = World.gravity * deltaTime;
-      velocity.y -= falling;
+      velocity.y += falling;
 
       if (velocity.y < 0) {
         this.#fallingDistance -= velocity.y * deltaTime;
       }
     } else {
+      velocity.y = falling;
       this.#fallingDistance = 0;
     }
 
@@ -111,16 +121,24 @@ class Character extends Entity {
     const lengthSq = velocity.lengthSq();
 
     if (lengthSq < EPS ** 2) {
-      velocity.set(0, 0, 0);
+      velocity.setScalar(0);
     }
 
-    if (this.platform != null) {
-      this.#v1.copy(velocity);
-      this.#v1.add(this.platform.velocity);
-      this.#move.copy(this.#v1).multiplyScalar(deltaTime);
-    } else {
-      this.#move.copy(velocity).multiplyScalar(deltaTime);
+    this.#v1.copy(velocity);
+
+    if (this.platformSet.size > 0) {
+      for (const platform of this.platformSet) {
+        this.#v1.add(platform.velocity);
+      }
     }
+
+    // 進行方向に下向きの方向を加えて、下り坂で接地判定がミスヒットするのを抑える
+    if (this.hasControls && this.isGrounded()) {
+      this.#side.crossVectors(this.#v1, Axis.y).normalize();
+      this.#v1.applyAxisAngle(this.#side, -Game.RAD1 * 15);
+    }
+
+    this.#move.copy(this.#v1.multiplyScalar(deltaTime));
 
     this.position.add(this.#move);
     this.collidable.traverse(({ collider }) => {

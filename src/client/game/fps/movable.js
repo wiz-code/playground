@@ -9,8 +9,6 @@ function chainUpdater() {
 }
 
 class Movable extends Publisher {
-  #currentPos = new Vector3();
-
   #prevPos = new Vector3();
 
   constructor(name) {
@@ -29,11 +27,38 @@ class Movable extends Publisher {
     this.updaters = [];
   }
 
-  setGeometry(geometry, offset, count, object) {
+  setGeometry(geometry, { offset, count, object }) {
     this.geometry = geometry;
     this.offset = offset;
     this.count = count;
     this.object = object;
+  }
+
+  getNodeIndices() {
+    const nodeIndices = [];
+    const points = [];
+    const pos = this.geometry.getAttribute('position').array;
+    
+    for (let i = 0; i < this.count; i += 1) {
+      const x = pos[this.offset + (i * 3)];
+      const y = pos[this.offset + (i * 3) + 1];
+      const z = pos[this.offset + (i * 3) + 2];
+      const vec = new Vector3(x, y, z);
+      points.push(vec);
+    }
+
+    const bb = new Box3().setFromPoints(points);
+    
+    this.geometry.boundsTree.shapecast({
+      intersectsBounds(box) {
+        return box.intersectsBox(bb);
+      },
+      intersectsRange: (offset, count, contained, depth, nodeIndex) => {
+        nodeIndices.push(nodeIndex);
+      },
+    });
+
+    return nodeIndices;
   }
 
   visible(bool = true) {
@@ -86,15 +111,16 @@ class Movable extends Publisher {
       updater.update(deltaTime);
     }
 
-    const positions = this.geometry.getAttribute('position').array;
+    /*const positions = this.geometry.getAttribute('position').array;
     const index = this.offset * 3;
     const [x, y, z] = positions.subarray(index, index + 3);
-    this.#currentPos.set(x, y, z);
+    this.#currentPos.set(x, y, z);*/
+    const { position } = this.object;
 
     this.velocity
-      .subVectors(this.#currentPos, this.#prevPos)
+      .subVectors(position, this.#prevPos)
       .divideScalar(deltaTime);
-    this.#prevPos.copy(this.#currentPos);
+    this.#prevPos.copy(position);
   }
 }
 

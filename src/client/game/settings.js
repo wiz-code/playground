@@ -6,9 +6,10 @@ export const Game = {
   maxSteps: 15,
   stepsPerFrame: 5,
   resizeDelayTime: 200,
-  EPS: 1e-6,
+  EPS: 1e-5, //1e-6,
   longDistance: 10000,
   RAD30: (30 / 360) * PI * 2,
+  RAD45: (45 / 360) * PI * 2,
   RAD1: (1 / 360) * PI * 2,
   SkipFrames: 5,
   FPS60: 1 / 60,
@@ -16,7 +17,7 @@ export const Game = {
 };
 
 export const Sound = {
-  volume: 50,
+  volume: 0, // 50,//////
   mute: false,
 };
 

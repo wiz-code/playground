@@ -1,5 +1,5 @@
 import {
-  CircleGeometry, /// ///////////
+  CircleGeometry,
   CapsuleGeometry,
   ConeGeometry,
   EdgesGeometry,
@@ -7,37 +7,43 @@ import {
   CylinderGeometry,
   IcosahedronGeometry,
   OctahedronGeometry,
+  DodecahedronGeometry,
+  TetrahedronGeometry,
   BufferGeometry,
+  InstancedBufferGeometry,
   Float32BufferAttribute,
+  InstancedBufferAttribute,
   MeshBasicMaterial,
   LineBasicMaterial,
   PointsMaterial,
   NormalBlending,
   Mesh,
+  InstancedMesh,
   LineSegments,
   Points,
   Group,
+  Matrix4,
+  ShaderLib,////////////
+  Sphere,//////////
 } from 'three';
 import {
   mergeGeometries,
   mergeVertices,
 } from 'three/addons/utils/BufferGeometryUtils.js';
+import { VRMUtils } from '@pixiv/three-vrm';
 
-import { Game } from '../settings';
-import { World, Screen } from './settings';
+import { World, Screen, Ground } from './settings';
+import { getPointsNormals } from './utils';
+import ModelLoader from '../model-loader';///////////////
 
-const { HalfPI } = Game;
 const { floor, PI } = Math;
+const modelLoader = new ModelLoader();///////
+const matrix = new Matrix4();
 
 const caches = {
   geometry: new Map(),
   material: new Map(),
 };
-
-const pointSpriteMap = new Map([
-  ['normal', 'point'],
-  ['small', 'pointThin'],
-]);
 
 const pointSizeMap = new Map([
   ['normal', 1],
@@ -45,6 +51,145 @@ const pointSizeMap = new Map([
 ]);
 
 const pointGap = 6;
+
+export const loadObjectData = async (
+  {
+    filename,
+    fileType,
+
+    position = { x: 0, y: 0, z: 0 },
+    rotation = { x: 0, y: 0, z: 0 },
+  },
+  callback,
+) => {
+  const url = await callback(filename, fileType);
+  const data = await modelLoader.load(url, filename, fileType);
+
+  if (fileType === 'vrm') {
+    const vrm = data.userData.vrm;
+    const object = vrm.scene;
+
+    VRMUtils.removeUnnecessaryVertices(object);
+    VRMUtils.removeUnnecessaryJoints(object);
+    //VRMUtils.combineSkeletons(object);
+    //VRMUtils.combineMorphs(vrm);
+
+    object.traverse((obj) => {
+      obj.frustumCulled = false;
+    });
+
+    return vrm;
+  }
+  
+  return data.scene;
+};
+
+export const createInstancedObject = (geomData, matData, count) => {
+  const { type, size } = geomData;
+  const { color, wireColor, pointColor } = matData;
+  let Geometry;
+
+  switch (type) {
+    case 'dodecahedron': {
+      Geometry = DodecahedronGeometry;
+      break;
+    }
+
+    case 'icosahedron': {
+      Geometry = IcosahedronGeometry;
+      break;
+    }
+
+    case 'octahedron': {
+      Geometry = OctahedronGeometry;
+      break;
+    }
+
+    case 'tetrahedron': {
+      Geometry = TetrahedronGeometry;
+      break;
+    }
+
+    default: {
+    }
+  }
+
+  const geom = {};
+  const mat = {};
+  const mesh = {};
+
+  const group = new Group();
+
+  geom.surface = new Geometry(size.radius, size.detail);
+  mat.surface = new MeshBasicMaterial({ color });
+  mesh.surface = new InstancedMesh(geom.surface, mat.surface, count);
+  mesh.surface.name = 'surface';
+
+  //const instancedGeom = new InstancedBufferGeometry();
+  geom.wireframe = new EdgesGeometry(geom.surface);
+  mat.wireframe = new LineBasicMaterial({ color: wireColor });
+  mesh.wireframe = new LineSegments(geom.wireframe, mat.wireframe);
+  mesh.wireframe.name = 'wireframe';
+
+  const vertices = geom.surface.getAttribute('position').array;
+  const normals = geom.surface.getAttribute('normal').array;
+
+  const pointsNormals = getPointsNormals(vertices, normals);
+  const pointsVertices = vertices.map((value, index) => value + (pointsNormals[index] * World.pointOffset / self.devicePixelRatio));
+  geom.points = new BufferGeometry();
+  geom.points.setAttribute(
+    'position',
+    new Float32BufferAttribute(pointsVertices, 3),
+  );
+
+  mat.points = new PointsMaterial({
+    color: pointColor,
+    size: World.pointSize / self.devicePixelRatio,
+    transparent: true,
+    alphaMap: self.texture.get('point'),
+    blending: NormalBlending,
+    alphaTest: Ground.alphaTest,
+    depthWrite: false,
+  });
+  mesh.points = new Points(geom.points, mat.points);
+  mesh.points.name = 'points';
+
+  const instanceMatrix = new InstancedBufferAttribute(new Float32Array(count * 16), 16);
+
+  mesh.wireframe.isInstancedMesh = true;
+  mesh.wireframe.instanceMatrix = instanceMatrix;
+  mesh.wireframe.count = count;
+  mesh.wireframe.instanceColor = null;
+  mesh.wireframe.morphTexture = null;
+  mesh.wireframe.previousInstanceMatrix = null;
+  mesh.wireframe.boundingBox = null;
+  mesh.wireframe.boundingSphere = null;
+
+  mesh.wireframe.computeBoundingBox = InstancedMesh.prototype.computeBoundingBox;
+  mesh.wireframe.computeBoundingSphere = InstancedMesh.prototype.computeBoundingSphere;
+  mesh.wireframe.getMatrixAt = InstancedMesh.prototype.getMatrixAt;
+  mesh.wireframe.setMatrixAt = InstancedMesh.prototype.setMatrixAt;
+
+  mesh.points.isInstancedMesh = true;
+  mesh.points.instanceMatrix = instanceMatrix.clone();
+  mesh.points.count = count;
+  mesh.points.instanceColor = null;
+  mesh.points.morphTexture = null;
+  mesh.points.previousInstanceMatrix = null;
+  mesh.points.boundingBox = null;
+  mesh.points.boundingSphere = null;
+
+  mesh.points.computeBoundingBox = InstancedMesh.prototype.computeBoundingBox;
+  mesh.points.computeBoundingSphere = InstancedMesh.prototype.computeBoundingSphere;
+  mesh.points.getMatrixAt = InstancedMesh.prototype.getMatrixAt;
+  mesh.points.setMatrixAt = InstancedMesh.prototype.setMatrixAt;
+
+  group.add(mesh.surface);
+  group.add(mesh.wireframe);
+  group.add(mesh.points);
+
+  return group;
+};
 
 const offsetMesh = (mesh, offset) => {
   const { rotation, position } = offset;
@@ -75,7 +220,7 @@ const offsetMesh = (mesh, offset) => {
 export const createPolyhedron = (
   subtype,
   name,
-  { type, style, size, transform = {}, wireframe = false, satellite = false },
+  { type, style, size, wireframe = false, satellite = false },
   offset,
 ) => {
   let geometry = {};
@@ -121,8 +266,11 @@ export const createPolyhedron = (
 
     if (satellite) {
       const pointDetail = size.pointDetail ?? 0;
-      //geometry.points = new OctahedronGeometry(size.radius + 1, pointDetail);
-      geometry.points = new OctahedronGeometry(size.radius + World.pointOffset, pointDetail);
+      // geometry.points = new OctahedronGeometry(size.radius + 1, pointDetail);
+      geometry.points = new OctahedronGeometry(
+        size.radius + World.pointOffset,
+        pointDetail,
+      );
       const pointsVertices = geometry.points
         .getAttribute('position')
         .array.slice();
@@ -155,9 +303,11 @@ export const createPolyhedron = (
       material.points = new PointsMaterial({
         color: style.pointColor,
         size: pointSize,
-        map: self.texture.get('point'),
+        transparent: true,
+        alphaMap: self.texture.get('point'),
         blending: NormalBlending,
-        alphaTest: 0.5,
+        alphaTest: World.pointAlphaTest,
+        depthWrite: false,
       });
     }
 
@@ -347,14 +497,16 @@ export const createSphere = (subtype, name, type, body, objOffset) => {
     }
 
     if (satellite) {
-      const pSprite = pointSpriteMap.get(pointSize);
-      const pSize = pointSizeMap.get(pointSize) * World.pointSize / devicePixelRatio;
+      const pSize =
+        (pointSizeMap.get(pointSize) * World.pointSize) / devicePixelRatio;
       material.points = new PointsMaterial({
         color: style.pointColor,
         size: pSize,
-        map: self.texture.get(pSprite),
+        transparent: true,
+        alphaMap: self.texture.get('point'),
         blending: NormalBlending,
-        alphaTest: 0.5,
+        alphaTest: World.pointAlphaTest,
+        depthWrite: false,
       });
     }
 
@@ -401,7 +553,7 @@ export const createCapsule = (subtype, name, type, body, offset) => {
   } else {
     const capSegments = size.capSegments ?? 4;
     const radiusSegments = size.radiusSegments ?? 8;
-    const heightSegments = size.heightSegments ?? 1;
+    let heightSegments = size.heightSegments ?? 1;
     geometry.body = new CapsuleGeometry(
       size.radius,
       size.height,
@@ -449,11 +601,11 @@ export const createCapsule = (subtype, name, type, body, offset) => {
     if (satellite) {
       const additional = pointSizeMap.get(pointSize) * World.pointOffset;
       const radius = size.radius + additional;
-      const heightSegments =
+      heightSegments =
         (size.height > pointGap ? floor(size.height / pointGap) : 0) + 1;
       let geom;
 
-      if (satelliteCap == 'both') {
+      if (satelliteCap === 'both') {
         geom = new CapsuleGeometry(radius, size.height, 1, 3, heightSegments);
       } else if (satelliteCap === 'end') {
         const geom1 = new ConeGeometry(radius, radius, 3);
@@ -572,14 +724,16 @@ export const createCapsule = (subtype, name, type, body, offset) => {
     }
 
     if (satellite) {
-      const pSprite = pointSpriteMap.get(pointSize);
-      const pSize = pointSizeMap.get(pointSize) * World.pointSize / devicePixelRatio;
+      const pSize =
+        (pointSizeMap.get(pointSize) * World.pointSize) / devicePixelRatio;
       material.points = new PointsMaterial({
         color: style.pointColor,
         size: pSize,
-        map: self.texture.get(pSprite),
+        transparent: true,
+        alphaMap: self.texture.get('point'),
         blending: NormalBlending,
-        alphaTest: 0.5,
+        alphaTest: World.pointAlphaTest,
+        depthWrite: false,
       });
     }
 

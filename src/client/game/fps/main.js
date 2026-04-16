@@ -1,5 +1,5 @@
 import {
-  Scene as ThreeScene,
+  Scene,
   FogExp2,
   PerspectiveCamera,
   OrthographicCamera,
@@ -10,14 +10,23 @@ import {
   Euler,////////////////
   Quaternion,//////////////
   AnimationClip, /////////////
-  ObjectLoader,///////////////
-  MeshBasicMaterial,/////////////
+  Vector3,/////////////
+  Matrix4,////////////////
+  PlaneGeometry,//////////
+  MeshBasicMaterial,////////////
+  Mesh,//////////
+  DoubleSide,////////////
+  DirectionalLight,///////////
 } from 'three';
+
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';////////////
+import { VRMLoaderPlugin, VRMUtils } from '@pixiv/three-vrm';//////////////
+import { MToonMaterialLoaderPlugin } from '@pixiv/three-vrm-materials-mtoon';//////////
 import { VertexNormalsHelper } from 'three/addons/helpers/VertexNormalsHelper.js';//////////
 
 import { Game as GameSettings } from '../settings';
 import { SharedDataIndex } from '../../../common/constants';
-import { Scene, Camera, World, Light } from './settings';
+import { Scene as SceneSettings, Camera, World, Light } from './settings';
 import FirstPersonControls from './controls';
 import GamepadControls from './gamepad.controls';
 import { GameStates, PlayState, CommonEvents } from './constants';
@@ -38,26 +47,32 @@ import GridProcessor from './grid-processor';
 import Movable from './movable';
 import Loop from '../loop';
 
+import { loadObjectData, createInstancedObject } from './create-object';///////////////////
+
 import { offsetPosition, disposeObject } from './utils';
 
 const { floor, round, min, exp } = Math;
 const levelMap = new Map(Levels);
 
-const { baseResistance } = World;
+const { gravity, baseResistance } = World;
 const resistances = Object.entries(World.Resistance);
 const dampingData = {};
-const getDamping = (delta) => {
+const getDamping = (delta, divisor) => {
   const base = exp(baseResistance * delta) - 1;
 
   for (let i = 0, l = resistances.length; i < l; i += 1) {
     const [key, value] = resistances[i];
-    const result = base * value;
+    let result = base * value;
+
+    if (key === 'spin') {
+      result /= divisor;
+    }
+
     dampingData[key] = result;
   }
 
   return dampingData;
 };
-self.promiseList = new Map();
 
 const heroMap = new Map(Heroes);
 
@@ -101,20 +116,48 @@ class WorkerMain {
     this.data = {};
 
     this.worker = {};
-    this.worker.loader = new Worker(new URL('../worker-loader.js', import.meta.url));
+    this.worker.loader = new Worker(new URL('../worker-load.js', import.meta.url));
     this.worker.loader.postMessage({ type: 'init' });
-    this.worker.loader.postMessage({ type: 'load', value: ['terrain-study-01.glb', 'gltf'] });
+    //this.worker.loader.postMessage({ type: 'load', value: ['terrain-study-01.glb', 'gltf'] });
     this.worker.loader.addEventListener('message', (event) => {
-      new ObjectLoader().parse(event.data.value, (object) => {
+      const { type, value } = event.data;
+
+      if (type === 'send-model') {
+        /*const [filename, json] = value;console.log(json)
+
+        if (this.resolverList.has(filename)) {
+          const { resolve } = this.resolverList.get(filename);
+          resolve(json);
+          this.resolverList.delete(filename);
+        }*/
+        const [filename, loaderType, data] = value;
+        let mimeType;
+
+        if (loaderType === 'gltf' || loaderType === 'vrm') {
+          mimeType = 'model/gltf+json';
+        }
+
+        const blob = new Blob([data], { type: mimeType });
+        const url = URL.createObjectURL(blob);
+
+        if (this.resolverList.has(filename)) {
+          const { resolve } = this.resolverList.get(filename);
+          resolve(url);
+          this.resolverList.delete(filename);
+        }
+      }
+
+      /*new ObjectLoader().parse(event.data.value, (object) => {
         const [mesh] = object.children;
         mesh.material = new MeshBasicMaterial({ color: 0xffff00 });
         //mesh.material.wireframe = true;
         mesh.material.needsUpdate = true;
 const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
-        this.game.scene.add(object);
+        //this.game.scene.add(object);
         object.position.y -= 17;
-      });
+      });*/
     });
+    this.resolverList = new Map();///////////////////////////////////
 
     // ゲーム管理変数
     this.game = {};
@@ -132,19 +175,18 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
     const levels = levelMap.get(this.params.gameId);
     this.game.level.data = new Map(levels);
 
-    this.pendingList = [];
     this.cache = { controls: null };
 
     this.scene = {};
     this.camera = {};
 
-    this.scene.field = new ThreeScene();
-    this.scene.field.background = new Color(Scene.background);
-    this.scene.field.fog = new FogExp2(Scene.Fog.color, Scene.Fog.density);
+    this.scene.field = new Scene();
+    this.scene.field.background = new Color(SceneSettings.background);
+    this.scene.field.fog = new FogExp2(SceneSettings.Fog.color, SceneSettings.Fog.density);
     /// ///////////////////
     this.game.scene = this.scene.field;
     /// ////////////////
-    this.scene.screen = new ThreeScene();
+    this.scene.screen = new Scene();
     this.indicators = SceneManager.createIndicators();
     const { povSight, povSightLines, povIndicator, centerMark, verticalFrame } =
       this.indicators;
@@ -187,7 +229,6 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
       Light.Ambient.color,
       Light.Ambient.intensity,
     );
-    this.scene.field.add(this.light.ambient);
 
     this.objectManager = new ObjectManager(
       this.game,
@@ -222,13 +263,9 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
   }
 
   async init() {
-    this.setLevel();
-
-    await new Promise((resolve) => {
-      if (!self.promiseList.has('create-controls')) {
-        self.promiseList.set('create-controls', resolve);
-      }
-    });
+    await this.setLevel();
+    await this.waitForEvent('create-controls');
+    this.scene.field.add(this.light.ambient);
 
     const heroId = this.game.states.get('heroId');
     const data = heroMap.get(heroId);
@@ -257,17 +294,10 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
     this.player.addEvent(event);
     this.player.activate('spawn');
 
-    await new Promise((resolve) => {
-      self.postMessage({ type: 'request-resize' });
+    self.postMessage({ type: 'request-resize' });
+    await this.waitForEvent('request-resize');
 
-      if (!self.promiseList.has('request-resize')) {
-        self.promiseList.set('request-resize', resolve);
-      }
-    });
-
-    Promise.allSettled(this.pendingList).then(() => {
-      self.postMessage({ type: 'loaded' });
-    });
+    self.postMessage({ type: 'loaded' });
   }
 
   onMessage(event) {
@@ -287,20 +317,13 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
         this.camera.screen.updateProjectionMatrix();
 
         this.controls.handleResize(width, height);
-        //this.renderer.setSize(width, height, false);
         this.sceneManager.setSize(width, height);
         this.sceneManager.update();
 
-        if (self.promiseList.has('request-resize')) {
-          const resolve = self.promiseList.get('request-resize');
-          self.promiseList.delete('request-resize');
-          resolve();
-        }
-
+        this.resolveEvent('request-resize');
         break;
       }
 
-      // 最初のゲームスタート時は必ず呼ばれる。ゲームパッド認識後、二度目移行は呼ばれない
       case 'create-controls': {
         this.controls = new FirstPersonControls(
           this.indicators,
@@ -308,31 +331,13 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
         );
         this.cache.controls = this.controls;
 
-        if (self.promiseList.has('create-controls')) {
-          const resolve = self.promiseList.get('create-controls');
-          self.promiseList.delete('create-controls');
-          resolve();
-        }
+        this.resolveEvent('create-controls');
         break;
       }
 
       case 'gamepad-connected': {
         this.#gamepadIndex = event.data.value;
-        this.controls = this.createGamepadControls(this.#gamepadIndex);
-
-        if (this.cache.controls == null) {
-          this.cache.controls = this.controls;
-        }
-
-        // ゲームパッド認識後に再スタート
-        if (self.promiseList.has('create-controls')) {
-          const resolve = self.promiseList.get('create-controls');
-          self.promiseList.delete('create-controls');
-          resolve();
-        } else {
-          this.controls.enable(false);
-          this.initGamepad();
-        }
+        this.initGamepad();
         break;
       }
 
@@ -343,7 +348,6 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
 
         if (this.cache.controls != null) {
           this.controls = this.cache.controls;
-
           this.player.setControls(this.camera.field, this.controls);
         }
         break;
@@ -397,7 +401,20 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
 
       ////for develop/////////
       case 'change-gui': {
-        const [stateName, partName, component, angle] = event.data.value;
+        /*const [index, color] = event.data.value;
+        const terrainObject = this.scene.field.getObjectByName('static-object');
+
+        if (terrainObject !== undefined) {
+          const surface = terrainObject.getObjectByName('surface');
+          const material = surface.material[index];
+          material.color = new Color(color);
+        }*/
+
+        const { value } = event.data;
+        const plane = this.scene.field.getObjectByName('test-plane');
+        plane.material.map = self.textures[value];
+
+        /*const [stateName, partName, component, angle] = event.data.value;
         const value = (angle / 360) * Math.PI * 2;
         const rotation = this.props[stateName][partName];
         rotation[component] = value;
@@ -420,7 +437,7 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
           track.values[9] = quat.y;
           track.values[10] = quat.z;
           track.values[11] = quat.w;
-        }
+        }*/
 
         /*if (name === 'state-jab-start:left-shoulder:angleX') {
           this.props.stateJabStart.leftShoulder.x = rad;
@@ -478,20 +495,76 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
   }
 
   async initGamepad() {
-    await new Promise((resolve) => {
-      self.postMessage({ type: 'request-resize' });
+    const prevControls = this.controls;
 
-      if (!self.promiseList.has('request-resize')) {
-        self.promiseList.set('request-resize', resolve);
-      }
-    });
+    if (this.cache.controls == null) {
+      this.cache.controls = prevControls;
+    }
 
-    this.player.setControls(this.camera.field, this.controls);
+    const controls = this.createGamepadControls(this.#gamepadIndex);
+    controls.enable(false);
+    this.controls = controls;
+    self.postMessage({ type: 'request-resize' });
+    await this.waitForEvent('request-resize');
+    
+    if (this.player != null) {
+      this.player.unsetControls();
+      this.player.setControls(this.camera.field, this.controls);
+    } else {}
 
     this.controls.enable();
   }
 
-  setLevel() {
+  waitForEvent(eventName, value) {
+    let resolvers;
+
+    if (!this.resolverList.has(eventName)) {
+      resolvers = Promise.withResolvers();
+      this.resolverList.set(eventName, resolvers);
+    } else {
+      resolvers = this.resolverList.get(eventName);
+    }
+
+    const promise = resolvers.promise.finally(() => {
+      this.resolverList.delete(eventName);
+    });
+
+    return promise;
+  }
+
+  resolveEvent(eventName, value) {
+    if (this.resolverList.has(eventName)) {
+      const { resolve } = this.resolverList.get(eventName);
+      resolve(value);
+    } else {
+      const resolvers = Promise.withResolvers();
+      this.resolverList.set(eventName, resolvers);
+
+      resolvers.resolve(value);
+    }
+  }
+
+  rejectEvent(eventName, value) {
+    if (this.resolverList.has(eventName)) {
+      const { reject } = this.resolverList.get(eventName);
+      reject(value);
+    } else {
+      const resolvers = Promise.withResolvers();
+      this.resolverList.set(eventName, resolvers);
+
+      resolvers.reject(value);
+    }
+  }
+
+  loadModel(filename, fileType) {
+    const resolvers = Promise.withResolvers();
+    this.resolverList.set(filename, resolvers);
+    this.worker.loader.postMessage({ type: 'load-model', value: [filename, fileType] });
+
+    return resolvers.promise;
+  }
+
+  async setLevel() {
     this.clearLevel();
 
     this.eventManager.addEvents(CommonEvents);
@@ -499,26 +572,79 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
     const levelId = this.game.states.get('levelId');
     const sdata = this.game.level.data.get(levelId);
 
-    const { level, bvh, helper } = createLevel(
+    const { object, collider, helper } = await createLevel(
       sdata,
-      this.params.crossOriginIsolated,
+      this.loadModel.bind(this),
+      this.params,
     );
 
-    this.movableManager.setBVH(bvh);
-    this.scene.field.add(level);
-    this.scene.field.add(bvh);
+    this.movableManager.setColliderGeometry(collider.geometry);
+    this.scene.field.add(object);
+    this.scene.field.add(collider);
 
-    const grids = level.getObjectsByProperty('type', 'grid');
+    const grids = object.getObjectsByProperty('type', 'grid');
     this.gridProcessor.addList(grids);
-    // this.helper = helper;this.scene.field.add(helper);//////////
+    this.helper = helper;
+    //this.scene.field.add(this.helper);
 
-    this.game.level.object = level;
-    this.game.level.meshBVH = bvh;
+    this.game.level.object = object;
+    this.game.level.collider = collider;
+
+    ////////////////////
+
+
+    /*const vrm = await loadObjectData(
+      { filename: 'model-02.vrm', fileType: 'vrm', position: { y: -5 } },
+      this.loadModel.bind(this),
+    );
+    const obj = vrm.scene;
+
+    obj.scale.setScalar(1);
+    obj.position.x = 20;
+    obj.position.y = -18;
+    this.scene.field.add(obj);*/
+    
+    const instanced = createInstancedObject(
+      { type: 'dodecahedron', size: { radius: 3, detail: 0 } },
+      { color: 0xb3d9ff, wireColor: 0x8a9199, pointColor: 0x6AA1B7 },
+      500,
+    );
+    const surface = instanced.getObjectByName('surface');
+    const wireframe = instanced.getObjectByName('wireframe');
+    const points = instanced.getObjectByName('points');
+    this.scene.field.add(surface);
+    this.scene.field.add(wireframe);
+    this.scene.field.add(points);
+
+    const euler = new Euler();
+    const sm = new Matrix4();
+    const rm = new Matrix4();
+    const pm = new Matrix4();
+
+    for (let i = 0; i < 1000; i += 1) {
+      const x = Math.random() * 200 - 100;
+      const y = (Math.random() * 10 - 5) + 5;
+      const z = Math.random() * 200 - 100;
+      const ry = Math.random() * Math.PI * 2;
+      const s = Math.random() * 1 + 0.5;
+      sm.makeScale(s, s, s);
+      euler.y = ry;
+      rm.makeRotationFromEuler(euler);
+      //pm.setPosition(x, y, z);
+      //sm.multiply(rm).multiply(pm);
+      sm.multiply(rm).setPosition(x, y, z);
+
+      surface.setMatrixAt(i, sm);
+      wireframe.setMatrixAt(i, sm);
+      points.setMatrixAt(i, sm);
+    }
+    
+    ///////////////////
 
     for (let i = 0, l = sdata.sections.length; i < l; i += 1) {
       const { characters, movables } = sdata.sections[i];
 
-      characters.forEach((data) => {
+      /*characters.forEach((data) => {
         const character = new Character(this.game, data.name, data.subtype);
 
         this.objectManager.add(character);
@@ -537,7 +663,7 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
         if (Array.isArray(data.updaters)) {
           character.setUpdaters(data.updaters);
         }
-      });
+      });*/
 
       movables.forEach((data) => {
         const { name, updaters } = data;
@@ -588,7 +714,7 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
         },
       };
 
-      const enemy = new Character(this.game, edata.name, edata.subtype);
+      /*const enemy = new Character(this.game, edata.name, edata.subtype);
 
       this.eventManager.watch(enemy);
       enemy.addEvents(edata.events);
@@ -599,10 +725,10 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
       if (Array.isArray(edata.updaters)) {
         enemy.setUpdaters(edata.updaters);
       }
-      this.objectManager.add(enemy);
+      this.objectManager.add(enemy);*/
     }
 
-    for (let i = 0; i < 10; i += 1) {
+    /*for (let i = 0; i < 10; i += 1) {
       const rx = Math.random() * 20 - 10;
       const rz = Math.random() * 40 - 10;
 
@@ -624,7 +750,7 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
       this.eventManager.watch(obstacle);
       obstacle.addEvents(event);
       obstacle.activate('spawn', 'timeout');
-    }
+    }*/
     /// /////////////////
 
     const { bgm } = this.game.level.data.get(levelId);
@@ -689,7 +815,7 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
 
   clearLevel() {
     this.objectManager.clearList();
-    this.movableManager.clearBVH();
+    this.movableManager.clearColliderGeometry();
     this.eventManager.clearMap();
     this.scene.field.clear();
 
@@ -716,11 +842,16 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
     this.movableManager.dispose();
     this.controls.dispose();
 
+    self.texture.forEach((t) => {
+      t.source.data.close();
+      t.dispose();
+    });
+    self.texture.clear();
+
     this.game.level = null;
     this.scene.field.clear();
     this.scene.screen.clear();
 
-    //this.renderer.dispose();
     this.sceneManager.dispose();
     self.close();
   }
@@ -773,7 +904,6 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
     const { framerateCoef, crossOriginIsolated, canUseWaitAsync } = this.params;
 
     if (framerateCoef !== 1 && this.#frameCount % framerateCoef !== 0) {
-      //return Promise.resolve();
       return;
     }
 
@@ -816,13 +946,15 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
     let elapsedTime = this.#prevTime;
 
     const deltaTime = this.#elapsedTime - elapsedTime;
-    const additional = round(deltaTime / GameSettings.FPS60);
-    const stepsPerFrame = min(
+    const rate = deltaTime / GameSettings.FPS60;
+    const additional = round(rate);
+    const stepsPerFrame = 5/*min(
       GameSettings.stepsPerFrame + additional,
       GameSettings.maxSteps,
-    );
+    );*/
     const delta = deltaTime / stepsPerFrame;
-    const damping = getDamping(delta);
+    const falling = World.gravity * delta;
+    const damping = getDamping(delta, rate);
 
     this.eventManager.update(deltaTime, this.#elapsedTime);
     this.movableManager.update(deltaTime);
@@ -831,11 +963,11 @@ const helper = new VertexNormalsHelper(mesh, 1, 0xff0000);object.add(helper);
     for (let i = 1; i <= stepsPerFrame; i += 1) {
       elapsedTime += delta;
       this.controls.update(delta);
-      this.objectManager.update(delta, elapsedTime, damping, i, stepsPerFrame);
+      this.objectManager.update(delta, elapsedTime, { falling, damping }, i, stepsPerFrame);
     }
 
     this.sceneManager.update(deltaTime);
-    // this.helper.update();
+    //this.helper.update();
 
     this.game.states.set('time', this.#elapsedTime);
   }

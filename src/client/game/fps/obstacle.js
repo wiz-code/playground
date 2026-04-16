@@ -40,7 +40,7 @@ class Obstacle extends Entity {
     this.hide();
   }
 
-  update(deltaTime, elapsedTime, damping) {
+  update(deltaTime, elapsedTime, { falling, damping }) {
     super.update(deltaTime);
 
     if (!this.isAlive()) {
@@ -48,7 +48,7 @@ class Obstacle extends Entity {
     }
 
     const { velocity } = this;
-    velocity.y -= World.gravity * deltaTime;
+    velocity.y += falling;
     velocity.addScaledVector(velocity, damping[this.type]);
     // this.#dir.copy(this.velocity).normalize();
     // this.rotation.setFromVector3(this.#dir);

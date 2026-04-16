@@ -14,7 +14,7 @@ export const Scene = {
     color: 0x111111,
     near: 60,
     far: 300,//100,
-    density: 0.02,//0.004,
+    density: 0.03,//0.02,
   },
 };
 export const Camera = {
@@ -39,7 +39,8 @@ export const Light = {
 };
 
 export const Grid = {
-  color: 0x71acc4,//0x4d7399,
+  color: 0x6AA1B7, //0x71acc4, //0x4d7399,
+  alphaTest: 0.6,
 };
 
 export const Axis = {
@@ -58,8 +59,9 @@ export const Cylinder = {
 
 export const Ground = {
   color: 0x4d4136,
-  wireColor: 0x332000,
+  wireColor: 0x424242, //0x332000,
   pointColor: 0xf4e511,
+  alphaTest: 0.5,
 };
 
 export const Tower = {
@@ -98,20 +100,21 @@ export const Controls = {
 
 export const World = {
   oob: -240,
-  gravity: 100, //300,
+  gravity: -100,//-100,
   baseResistance: -6,
   Resistance: {
     ground: 1,
     air: 0.1,
     spin: 5,
     ammo: 0.2,
-    obstacle: 1 / 60,
+    obstacle: 0.15,
     item: 0.4,
   },
   collisionShock: 0.8,
-  pointSize: 0.5, //1.5,
-  pointOffset: 0.2, //0.7,
-  spacing: 3.6, //12.5,
+  pointSize: 0.5,
+  pointOffset: 0.3,
+  pointAlphaTest: 0.5,
+  spacing: 3.6,
   fallingDeathDistance: 145,
 
   urgencyDuration: 0.1,

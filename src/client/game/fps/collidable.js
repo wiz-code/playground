@@ -31,6 +31,25 @@ const { HalfPI } = Game;
 
 const { PI } = Math;
 
+const traverse = (object, callback, depth = 0) => {
+  let flag = callback(object, depth) ?? true;
+
+  if (!flag) {
+    return;
+  }
+
+  for (let i = 0, l = object.children.length; i < l; i += 1) {
+    const child = object.children[i];
+    flag = traverse(child, callback, depth + 1) ?? true;
+
+    if (!flag) {
+      break;
+    }
+  }
+
+  return flag;
+};
+
 class Collidable {
   #vec = new Vector3();
 
@@ -186,6 +205,9 @@ class Collidable {
         this.children.push(collidable);
       }
     }
+
+    this.nodeList = [];
+    traverse(this, (col, depth) => this.nodeList.push(col, depth));
   }
 
   show() {
@@ -312,7 +334,20 @@ class Collidable {
     });
   }
 
-  traverse(callback, depth = 0) {
+  traverse(callback) {
+    for (let i = 0, l = this.nodeList.length; i < l; i += 2) {
+      const node = this.nodeList[i];
+      const depth = this.nodeList[i + 1];
+
+      const flag = callback(node, depth) ?? true;
+
+      if (!flag) {
+        break;
+      }
+    }
+  }
+
+  /*traverse(callback, depth = 0) {
     let flag = callback(this, depth) ?? true;
 
     if (!flag) {
@@ -329,9 +364,9 @@ class Collidable {
     }
 
     return flag;
-  }
+  }*/
 
-  getChildByName(name) {///////////
+  getChildByName(name) {
     let child = null;
 
     this.traverse((col) => {

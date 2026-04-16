@@ -14,12 +14,9 @@ import {
 import { useTheme } from '@mui/material/styles';
 
 import { BasicModalBox } from './Common';
-import Common from '../../common.json';
 import gameSlice from '../redux/gameSlice';
 
 const { actions: gameActions } = gameSlice;
-const { Games, Paths } = Common;
-const gameMap = new Map(Games);
 
 const boxStyle = (theme) => ({
   position: 'absolute',

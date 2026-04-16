@@ -16,11 +16,10 @@ import { useTheme } from '@mui/material/styles';
 import Layout from './Layout';
 import Head from './Head';
 
-import Common from '../../common.json';
+import { Games, Paths } from '../../common/constants';
 import gameSlice from '../redux/gameSlice';
 
 const { actions: gameActions } = gameSlice;
-const { Games, Paths } = Common;
 const gameMap = new Map(Games);
 const pathMap = new Map(Paths);
 

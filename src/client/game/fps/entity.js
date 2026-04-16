@@ -7,6 +7,8 @@ import { Game } from '../settings';
 import { InitialDir, Axis, World } from './settings';
 import Updater from './updater';
 
+const coef = 0.01;
+
 class Entity extends EventDispatcher {
   #states = new Set();
 
@@ -44,12 +46,13 @@ class Entity extends EventDispatcher {
 
     this.params = {};
 
-    this.platform = null;
+    this.platformSet = new Set();
+    this.surfaceNormal = new Vector3();///////////////////////////////
 
     this.hasControls = false;
     this.position = new Vector3();
     this.rotation = new Quaternion();
-    this.velocity = new Vector3();/////////
+    this.velocity = new Vector3();
     this.collidable = null;
     this.updaters = [];
   }
@@ -83,9 +86,9 @@ class Entity extends EventDispatcher {
   }
 
   setPosition(position = {}) {
-    const x = (position.x ?? 0) * World.spacing;
-    const y = (position.y ?? 0) * World.spacing;
-    const z = (position.z ?? 0) * World.spacing;
+    const x = (position.x ?? 0) * World.spacing + coef;
+    const y = (position.y ?? 0) * World.spacing + coef;
+    const z = (position.z ?? 0) * World.spacing + coef;
 
     this.#vec.set(x, y, z);
     this.#vec.sub(this.position);
@@ -263,10 +266,8 @@ class Entity extends EventDispatcher {
         const { skeletal, velocity, collider, data: { prevCenter } } = col;
         if (skeletal != null) {
           skeletal.update(deltaTime);
-          col.applyRotation();////////
+          col.applyRotation();
         }
-
-        //col.applyRotation();
 
         collider.getCenter(this.#center);
         velocity.subVectors(this.#center, prevCenter).divideScalar(deltaTime);

@@ -24,9 +24,9 @@ import { Game } from '../settings';
 import { World, Axis, Controls, InitialDir } from './settings';
 import { getGridPos, getVectorPos } from './utils';
 
-const { floor, sign, random, min, max, PI } = Math;
+const { abs, floor, sign, acos, random, min, max, PI } = Math;
 const { EPS, RAD30, HalfPI } = Game;
-
+let rad = 0;/////////////////////
 const urgentActions = new Set(UrgentActions);
 
 const easeOutQuad = (x) => 1 - (1 - x) * (1 - x);
@@ -158,6 +158,7 @@ class Player extends Character {
     }
 
     this.velocity.y = this.data.stats.jumpPower * value;
+    this.setGrounded(false);//////////////
   }
 
   moveForward(deltaTime, value, action = -1) {
@@ -180,11 +181,24 @@ class Player extends Character {
       accel = airMoveAccel;
     }
 
-    this.#forwardA.copy(InitialDir).applyQuaternion(this.rotation);
-    this.#sideA.crossVectors(this.#forwardA, Axis.y);
-    this.#forwardA.applyAxisAngle(this.#sideA, sign(-value) * Game.RAD30);
+    this.#forwardA.copy(InitialDir).applyQuaternion(this.rotation).multiplyScalar(sign(value));
+
+    if (this.isGrounded()) {
+      const dot = this.#forwardA.dot(this.surfaceNormal);
+      this.#forwardA.addScaledVector(this.surfaceNormal, -dot).normalize();
+      
+      //this.#forwardA.applyAxisAngle(this.#sideA, sign(-value) * Game.RAD30);
+      //this.#sideA.crossVectors(this.#forwardA, Axis.y).normalize();
+      //this.#forwardA.applyAxisAngle(this.#sideA, -Game.RAD30);
+    }
+
+    //this.#sideA.crossVectors(this.#forwardA, Axis.y).normalize();
+    //this.#forwardA.applyAxisAngle(this.#sideA, -Game.RAD45);
+
+    
+
     this.velocity.add(
-      this.#forwardA.multiplyScalar(accel * value * deltaTime),
+      this.#forwardA.multiplyScalar(abs(accel * value * deltaTime)),
     );
   }
 
@@ -225,11 +239,20 @@ class Player extends Character {
       accel = airMoveAccel;
     }
 
-    this.#forwardB.copy(InitialDir).applyQuaternion(this.rotation);
+    this.#forwardB.copy(InitialDir).applyQuaternion(this.rotation).multiplyScalar(sign(value));
     this.#sideB.crossVectors(this.#forwardB, Axis.y).normalize();
-    this.#sideB.applyAxisAngle(this.#forwardB, sign(value) * Game.RAD30);
+
+    if (this.isGrounded()) {
+      const dot = this.#sideB.dot(this.surfaceNormal);
+      this.#sideB.addScaledVector(this.surfaceNormal, -dot).normalize();
+
+      //this.#sideB.applyAxisAngle(this.#forwardB, sign(value) * Game.RAD30);
+    } else {
+      //
+    }
+    
     this.velocity.add(
-      this.#sideB.multiplyScalar(accel * value * moveSideCoef * deltaTime),
+      this.#sideB.multiplyScalar(abs(accel * value * moveSideCoef * deltaTime)),
     );
   }
 
@@ -362,22 +385,25 @@ class Player extends Character {
     this.steer(deltaTime);
   }
 
-  update(deltaTime, elapsedTime, damping) {
-    super.update(deltaTime, elapsedTime, damping);
+  update(deltaTime, elapsedTime, physics) {
+    //super.update(deltaTime, elapsedTime, physics);
 
+    // 回転速度の減衰処理
     if (this.#angularVel !== 0) {
-      this.#angularVel += this.#angularVel * damping.spin;
+      this.#angularVel += this.#angularVel * physics.damping.spin;
 
-      if (
+      /*if (
         (this.#angularVel > 0 && this.#angularVel < EPS) ||
         (this.#angularVel < 0 && this.#angularVel > -EPS)
-      ) {
+      ) {*/
+      if (abs(this.#angularVel) < EPS) {
         this.#angularVel = 0;
       }
 
       this.#deltaTheta = this.#angularVel * deltaTime;
     }
 
+    // 回転角度の適用処理
     if (this.#deltaTheta !== 0) {
       this.#quat.setFromAxisAngle(Axis.y, this.#deltaTheta);
       this.rotateBy(this.#quat);
@@ -390,6 +416,8 @@ class Player extends Character {
     }
 
     this.#deltaTheta = 0;
+
+    super.update(deltaTime, elapsedTime, physics);
   }
 
   postUpdate(deltaTime) {
@@ -399,7 +427,7 @@ class Player extends Character {
       const { radius, height } = this.data;
       const { position: cpos } = this.camera;
       const { collider, quaternion } = this.collidable;
-      this.#pos.copy(this.position);
+      //this.#pos.copy(this.position);
 
       if (collider.shape === 'capsule') {
         this.#normal.copy(collider.getProp('normal'));
@@ -407,9 +435,7 @@ class Player extends Character {
         this.#normal.copy(collider.axis).applyQuaternion(quaternion).normalize();
       }
 
-      const cameraOffsetY = 
-
-      cpos.copy(this.#pos);
+      cpos.copy(this.position);
       cpos.addScaledVector(this.#normal, this.data.cameraOffsetY);
 
       if (this.lookRotation.theta === 0 && this.lookRotation.phi === HalfPI) {
@@ -423,7 +449,7 @@ class Player extends Character {
           this.arrow.visible = true;
         }
 
-        apos.copy(this.#pos);
+        apos.copy(this.position);
         apos.addScaledVector(this.#normal, this.data.arrowOffsetY);
 
         this.#arrowDir

@@ -20,8 +20,6 @@ class TextureManager {
   constructor() {
     this.loader = new ImageLoader();
     this.imageMap = new Map();
-    // this.contextMap = new Map();
-    // this.spriteMap = new Map();
 
     for (const [name, params] of spriteMap) {
       const [spriteName, ...args] = params;
@@ -33,8 +31,6 @@ class TextureManager {
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
     sprites[spriteName](context, ...args);
-    // const texture = new Texture(canvas);
-    // texture.needsUpdate = true;
 
     this.imageMap.set(name, canvas);
   }
@@ -89,16 +85,10 @@ class TextureManager {
 
   dispose(name) {
     this.imageMap.delete(name);
-    /* this.contextMap.delete(name);
-    const texture = this.spriteMap.get(name);
-    texture.dispose();
-    this.spriteMap.delete(name); */
   }
 
   disposeAll() {
-    /* for (const key of this.spriteMap.keys()) {
-      this.dispose(key);
-    } */
+    this.imageMap.clear();
   }
 }
 

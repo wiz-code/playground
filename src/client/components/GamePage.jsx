@@ -34,15 +34,12 @@ import PlayGame from './PlayGame';
 import { ColumnGrid, Row } from './Common';
 import { GameContext } from '../components/Context';
 
-import Common from '../../common.json';
 import { getNextScene } from '../utils';
 import settingSlice from '../redux/settingSlice';
 import gameSlice from '../redux/gameSlice';
 
 const { actions: gameActions } = gameSlice;
 const { actions: settingActions } = settingSlice;
-const { Games } = Common;
-const gameMap = new Map(Games);
 
 function GamePage() {
   const dispatch = useDispatch();

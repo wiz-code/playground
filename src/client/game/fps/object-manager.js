@@ -1,23 +1,24 @@
-import { Box3, Vector3, Sphere, Line3 } from 'three';
+import { Box3, Vector3, Sphere, Line3, /**/Ray, Plane } from 'three';
 import { NOT_INTERSECTED, INTERSECTED, CONTAINED } from 'three-mesh-bvh';
 
 import Capsule from './capsule';
 import { Game } from '../settings';
-import { World } from './settings';
+import { World, Axis } from './settings';
 import Publisher from '../publisher';
 import SweepAndPrune from './sap';
 import {
   triangleCapsuleIntersect,
   triangleSphereIntersect,
-  //lineToLineClosestPoints,
+  // lineToLineClosestPoints,
   closestPointsSegmentToSegment,
 } from './utils';
 
-const { sqrt, cos, PI } = Math;
+const { abs, sqrt, cos, floor, acos, max, PI } = Math;
 
-const RAD45 = (45 / 360) * PI * 2;
-const COS45 = cos(RAD45);
+const RAD60 = (60 / 360) * PI * 2;
+const COS60 = cos(RAD60);
 const Restitution = 0.8;
+const AdjustCoef = 0.25;
 
 class ObjectManager extends Publisher {
   #vecA = new Vector3();
@@ -40,7 +41,9 @@ class ObjectManager extends Publisher {
 
   #center = new Vector3();
 
-  #depth = new Vector3();
+  #penetrations = [];
+
+  #collisionCount = 0;
 
   #vec = new Vector3();
 
@@ -49,6 +52,8 @@ class ObjectManager extends Publisher {
   #c2 = new Vector3();
 
   #triangleIndexSet = new Set();
+
+  #triangleIndexMap = new Map(); /// ////////
 
   #l1 = new Line3();
 
@@ -64,7 +69,21 @@ class ObjectManager extends Publisher {
 
   #move2 = new Vector3();
 
+  #n1 = new Vector3();
+
   #colCenter = new Vector3();
+
+  #pos = new Vector3(); /// //////
+
+  #ray = new Ray();///////////////
+
+  #v1 = new Vector3();/////////////
+
+  #v2 = new Vector3();/////////////
+
+  #v3 = new Vector3();/////////////
+
+  #pl = new Plane();/////////////
 
   constructor(game, scene, eventManager, movableManager) {
     super();
@@ -177,20 +196,24 @@ class ObjectManager extends Publisher {
     }
   }
 
-  #collisionWithTerrain(object, geometry, refitSet, movableList) {
-    const { type, collidable, position, velocity } = object;
-    this.#move.set(0, 0, 0);
+  #collisionWithTerrain(
+    object,
+    geometry,
+    refitSet,
+    movableList /* */,
+    deltaTime /* */,
+    physics,
+  ) {
+    const { type, collidable, velocity, platformSet, surfaceNormal } = object;
+    this.#move.setScalar(0);
+    this.#n1.setScalar(0);
+    this.#penetrations.length = 0;
+    platformSet.clear();
 
-    if (type === 'character') {
-      object.setGrounded(false);
-      object.platform = null;
-    }
-
-    collidable.traverse(({ parent, collider }) => {
+    collidable.traverse(({ collider }) => {
       let intersected = null;
-      this.#triangleIndexSet.clear();
-      this.#depth.set(0, 0, 0);
-      let result = false;
+      this.#triangleIndexMap.clear();
+      let collided = false;
 
       collider.getCenter(this.#center);
       collider.getBoundingBox(this.#box);
@@ -207,35 +230,10 @@ class ObjectManager extends Publisher {
 
         return NOT_INTERSECTED;
       };
-      const callbacks = {
-        boundsTraverseOrder,
-        intersectsBounds,
-      };
+      const intersectsRange = (offset, count, contained, depth, nodeIndex) => {
+        if (type === 'character') {
+          intersected = null;
 
-      if (collider.shape === 'capsule') {
-        collider.copyTo(this.#capsule);
-
-        const intersectsTriangle = (triangle, triangleIndex, a, depth) => {
-          const collision = triangleCapsuleIntersect(this.#capsule, triangle);
-
-          if (collision !== false) {
-            if (intersected != null) {
-              this.#triangleIndexSet.add(triangleIndex);
-            }
-
-            result = true;
-            this.#depth.add(collision.normal.multiplyScalar(collision.depth));
-          }
-
-          return false;
-        };
-        const intersectsRange = (
-          offset,
-          count,
-          contained,
-          depth,
-          nodeIndex,
-        ) => {
           for (let k = 0; k < count; k += 1) {
             const i1 = (offset + k) * 3;
             const vertexIndex = geometry.index.getX(i1);
@@ -245,13 +243,46 @@ class ObjectManager extends Publisher {
 
               if (movable.offset <= vertexIndex && vertexIndex <= offsetEnd) {
                 intersected = movable;
-                refitSet.add(nodeIndex);
+                // refitSet.add(nodeIndex);
               }
             }
           }
+        }
+      };
+      const callbacks = {
+        boundsTraverseOrder,
+        intersectsBounds,
+        intersectsRange,
+      };
+
+      if (collider.shape === 'capsule') {
+        collider.copyTo(this.#capsule);
+
+        const intersectsTriangle = (triangle, triangleIndex) => {
+          const snormal = !object.isGrounded() ? null : surfaceNormal;
+          const collision = triangleCapsuleIntersect(this.#capsule, triangle, snormal);
+
+          if (collision !== false) {
+            if (intersected != null) {
+              let triangleSet;
+
+              if (!this.#triangleIndexMap.has(intersected)) {
+                triangleSet = new Set();
+                this.#triangleIndexMap.set(intersected, triangleSet);
+              } else {
+                triangleSet = this.#triangleIndexMap.get(intersected);
+              }
+
+              triangleSet.add(triangleIndex);
+            }
+
+            collided = true;
+            this.#penetrations.push(collision);
+          }
+
+          return false;
         };
         callbacks.intersectsTriangle = intersectsTriangle;
-        callbacks.intersectsRange = intersectsRange;
 
         geometry.boundsTree.shapecast(callbacks);
       } else if (collider.shape === 'sphere') {
@@ -261,8 +292,8 @@ class ObjectManager extends Publisher {
           const collision = triangleSphereIntersect(this.#sphere, triangle);
 
           if (collision !== false) {
-            result = true;
-            this.#depth.add(collision.normal.multiplyScalar(collision.depth));
+            collided = true;
+            this.#penetrations.push(collision);
           }
 
           return false;
@@ -278,82 +309,116 @@ class ObjectManager extends Publisher {
           intersectsBounds,
           intersectsTriangle: (triangle) => {
             const collision = this.#box.intersectsTriangle(triangle);
-
-            if (collision) {
-              result = true;
-
-              // TODO
-            }
+            // TODO
 
             return false;
           },
         });
       }
 
-      if (result) {
-        const depth = this.#depth.length();
-        result = { normal: this.#depth.clone().normalize(), depth };
-      }
-
-      if (result !== false) {
+      if (collided) {
         if (type === 'character') {
-          const onGround = result.normal.y > COS45;
+          if (this.#triangleIndexMap.size > 0) {
+            for (const [movable, set] of this.#triangleIndexMap) {
+              if (set.size > 0) {
+                for (const index of set) {
+                  const vindex = geometry.index.getX(index * 3);
 
-          // 着地時はバウンドを無効に
-          if (!onGround) {
-            velocity.addScaledVector(
-              result.normal,
-              -result.normal.dot(velocity),
-            );
-          } else if (!object.isGrounded()) {
-            object.setGrounded(onGround);
-          }
-
-          if (this.#triangleIndexSet.size > 0) {
-            for (const index of this.#triangleIndexSet) {
-              const vindex = geometry.index.getX(index * 3);
-
-              if (
-                intersected.offset <= vindex &&
-                vindex <= intersected.offset + intersected.count
-              ) {
-                object.platform = intersected;
-                break;
+                  if (
+                    movable.offset <= vindex &&
+                    vindex <= movable.offset + movable.count
+                  ) {
+                    platformSet.add(movable);
+                    break;
+                  }
+                }
               }
             }
           }
-
-          const fallingDistance = object.getFallingDistance();
-
-          if (onGround && fallingDistance >= World.fallingDeathDistance) {
-            this.eventManager.dispatch(null, 'fall-down', object);
-          }
-        } else {
-          // object.addBounceCount();
-
-          velocity.addScaledVector(
-            result.normal,
-            -result.normal.dot(velocity) * 1.5,
-          );
-        }
-
-        if (result.depth >= Game.EPS) {
-          this.#move.add(result.normal.multiplyScalar(result.depth));
         }
       }
     });
 
-    object.position.add(this.#move);
-    collidable.traverse(({ collider }) => {
-      collider.moveBy(this.#move);
-      this.sap.updateObject(collider);
-    });
+    if (this.#penetrations.length > 0) {
+      this.#penetrations.forEach((p) => this.#move.add(p));
+      this.#move.divideScalar(this.#penetrations.length);
+
+      const len = this.#move.length();
+      const offset = max(0, len - Game.EPS);
+      this.#n1.copy(this.#move).normalize();
+      this.#move.copy(this.#n1).multiplyScalar(offset);
+
+      if (type === 'character') {
+        const deltaY = abs(velocity.y * deltaTime * AdjustCoef);
+        const isGrounded = this.#move.y > deltaY;
+        
+        if (!isGrounded) {
+          velocity.addScaledVector(this.#n1, -this.#n1.dot(velocity));
+          object.surfaceNormal.setScalar(0);
+        } else {
+          object.surfaceNormal.copy(this.#n1);
+        }
+
+        object.setGrounded(isGrounded);
+      }
+    } else {
+      if (type === 'character') {
+        object.surfaceNormal.setScalar(0);
+        object.setGrounded(false);
+      }
+    }
+
+    /*const fallingDistance = object.getFallingDistance();
+
+    if (fallingDistance >= World.fallingDeathDistance) {
+      this.eventManager.dispatch(null, 'fall-down', object);
+    }*/
+
+    /*if (type === 'character') {
+      const deltaY = abs(velocity.y * deltaTime * AdjustCoef);
+      const isGrounded = this.#move.y > deltaY;
+  //object.hasControls && console.log('isGrounded', isGrounded)
+      const dot = this.#n1.dot(velocity);
+      const aN = this.#n1.multiplyScalar(-dot);
+      //velocity.addScaledVector(this.#n1, -dot);
+          
+      if (!isGrounded) {
+        //const dot = this.#n1.dot(velocity);
+        velocity.add(aN);
+        object.surfaceNormal.copy(Axis.y);//////////////////
+      } else {
+        object.surfaceNormal.copy(this.#n1);///////////////
+        const fallingDistance = object.getFallingDistance();
+
+        
+      }
+
+      object.setGrounded(isGrounded);
+    
+    
+      
+        
+      } else if (object.type === 'obstacle') {
+        // object.addBounceCount();
+        const dot = this.#n1.dot(velocity);
+        velocity.addScaledVector(this.#n1, -dot * 2);
+      }*/
+
+      // const prevPosY = object.position.y;
+      // const velY = velocity.y;
+      object.position.add(this.#move);
+      // object.hasControls && console.log('velY', velY, 'prev posY', prevPosY, 'after posY', object.position.y, 'actual deltaY', deltaY, 'adjust deltaY', this.#move.y, 'grounded', object.isGrounded?.());////////////
+
+      collidable.traverse(({ collider }) => {
+        collider.moveBy(this.#move);
+        this.sap.updateObject(collider);
+      });
+    
   }
 
   #collisionWithObject(a1, a2) {
-    const { states } = this.game;
-    this.#move1.set(0, 0, 0);
-    this.#move2.set(0, 0, 0);
+    this.#move1.setScalar(0);
+    this.#move2.setScalar(0);
     const { velocity: av1 } = a1;
     const { velocity: av2 } = a2;
 
@@ -372,7 +437,7 @@ class ObjectManager extends Publisher {
                 ca2.getProp('start'),
                 ca2.getProp('end'),
               );
-              //lineToLineClosestPoints(la1, la2, this.#t1, this.#t2);
+              // lineToLineClosestPoints(la1, la2, this.#t1, this.#t2);
               closestPointsSegmentToSegment(la1, la2, this.#t1, this.#t2);
               this.#vecA.subVectors(this.#t1, this.#t2);
               const len = this.#vecA.length();
@@ -393,8 +458,6 @@ class ObjectManager extends Publisher {
                   const j = (-(1 + Restitution) * dot * (m1 * m2)) / m;
                   this.#vecC.copy(normal).multiplyScalar(j);
 
-                  // v1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
-                  // v2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
                   av1.add(this.#vecD.copy(this.#vecC).divideScalar(m1));
                   av2.sub(this.#vecE.copy(this.#vecC).divideScalar(m2));
                 }
@@ -598,6 +661,8 @@ class ObjectManager extends Publisher {
               }
             }
           }
+
+          return true;
         });
       }
     });
@@ -612,12 +677,19 @@ class ObjectManager extends Publisher {
     });
   }
 
-  collisions() {
+  collisions(deltaTime, physics) {
     const { refitSet, geometry, list: movableList } = this.movableManager;
 
     for (const object of this.list) {
       if (object.isAlive()) {
-        this.#collisionWithTerrain(object, geometry, refitSet, movableList);
+        this.#collisionWithTerrain(
+          object,
+          geometry,
+          refitSet,
+          movableList /* */,
+          deltaTime /* */,
+          physics,
+        );
       }
     }
 
@@ -630,7 +702,7 @@ class ObjectManager extends Publisher {
     }
   }
 
-  update(deltaTime, elapsedTime, damping, currentStep, steps) {
+  update(deltaTime, elapsedTime, physics, currentStep, steps) {
     const list = Array.from(this.list.keys());
     const len = this.list.size;
     const totalTime = deltaTime * steps;
@@ -639,13 +711,13 @@ class ObjectManager extends Publisher {
       const object = list[i];
 
       if (object.isAlive()) {
-        const { type, collidable } = object;
+        const { collidable } = object;
 
         if (currentStep === 1) {
           object.preUpdate(totalTime);
         }
 
-        object.update(deltaTime, elapsedTime, damping);
+        object.update(deltaTime, elapsedTime, physics);
 
         collidable.traverse(({ collider }) => {
           const center = collider.getCenter(this.#colCenter);
@@ -654,11 +726,13 @@ class ObjectManager extends Publisher {
             this.eventManager.dispatch(null, 'oob', object);
             return false;
           }
+
+          return true;
         });
       }
     }
 
-    this.collisions();
+    this.collisions(deltaTime, physics);
 
     if (currentStep === steps) {
       for (let i = 0; i < len; i += 1) {

@@ -17,20 +17,26 @@ import {
   LineSegments,
   Vector2,
   Vector3,
+  Euler,
+  Quaternion,
+  Matrix4,
   FrontSide,
   BackSide,
   DoubleSide,
+  Color,
 } from 'three';
-import { mergeGeometries } from 'three/addons/utils/BufferGeometryUtils.js';
+import { mergeGeometries, mergeVertices, toCreasedNormals } from 'three/addons/utils/BufferGeometryUtils.js';
+import { VertexNormalsHelper } from 'three/addons/helpers/VertexNormalsHelper.js';//////////
 import { SUBTRACTION, ADDITION, Brush, Evaluator } from 'three-bvh-csg';
 import { ImprovedNoise } from 'three/addons/math/ImprovedNoise.js';
 
 import TextureManager from '../texture-manager';
 import { World, Ground, Grid, Cylinder, Tower, Column } from './settings';
-import { getPointsVertices } from './utils';
+import { getPointsNormals } from './utils';
+import ModelLoader from '../model-loader';
 
 const { sin, cos, floor, ceil, abs, PI } = Math;
-
+const modelLoader = new ModelLoader();
 let seed = PI / 4;
 const customRandom = () => {
   seed += 1;
@@ -153,20 +159,20 @@ export const createGrid = ({
   geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
   geometry.computeBoundingSphere();
 
-  const pointSize = World.pointSize / devicePixelRatio;
+  const pointSize = World.pointSize / self.devicePixelRatio;
   const gridMat = new PointsMaterial({
     color: Grid.color,
     size: pointSize,
-    map: self.texture.get('point'),
-    blending: NormalBlending,
-    depthTest: true,
     transparent: true,
-    alphaTest: 0.5,
+    alphaMap: self.texture.get('point'),
+    blending: NormalBlending,
+    alphaTest: Grid.alphaTest,
+    depthWrite: false,
   });
 
   const findGridMat = gridMat.clone();
   findGridMat.size =  pointSize / 2;
-  findGridMat.map = self.texture.get('pointThin');
+  findGridMat.alphaMap = self.texture.get('pointThin');
 
   const grid = new Points(geometry, [gridMat, findGridMat]);
 
@@ -176,60 +182,68 @@ export const createGrid = ({
     position.z * World.spacing,
   );
 
-  //grid.rotation.set(rotation.x, rotation.y, rotation.z, 'YXZ');
-  grid.rotation.set(rotation.x, rotation.y, rotation.z, 'XYZ');/////////
+  grid.rotation.set(rotation.x, rotation.y, rotation.z, 'XYZ');
 
   return grid;
 };
 
-export const createGround = ({
-  name = '',
-  movable = false,
+export const loadTerrainData = async (
+  {
+    filename,
+    fileType,
+    role = 'static-object',
 
-  widthSegments = 10,
-  depthSegments = 10,
-  bumpHeight = 1,
-  color = {
-    surface: Ground.color,
-    wireframe: Ground.wireColor,
-    points: Ground.pointColor,
+    position = { x: 0, y: 0, z: 0 },
+    rotation = { x: 0, y: 0, z: 0 },
   },
-  position = { x: 0, y: 0, z: 0 },
-  rotation = { x: 0, y: 0, z: 0 },
-}) => {
-  const width = widthSegments * World.spacing;
-  const depth = depthSegments * World.spacing;
+  callback,
+) => {
+  const url = await callback(filename, fileType);
+  const data = await modelLoader.load(url, filename, fileType);
+  const terrain = data.scene;
+  console.log(terrain)
+  const list = [];
 
-  const data = generateHeight(width, depth);
+  const x = position.x * World.spacing;
+  const y = position.y * World.spacing;
+  const z = position.z * World.spacing;
+  const pos = new Vector3(x, y, z);
+  const euler = new Euler(rotation.x, rotation.y, rotation.z);
+  const quat = new Quaternion().setFromEuler(euler);
+  const matrix = new Matrix4().compose(pos, quat, new Vector3().setScalar(1));
 
+  terrain.traverse((object) => {
+    if (object.isMesh) {
+      const { geometry, material } = object;
+
+      const geom = mergeVertices(geometry);
+      const mat = material.clone();
+
+      geom.applyMatrix4(object.matrixWorld);
+      geom.applyMatrix4(matrix);
+
+      geometry.dispose();
+      material.dispose();
+
+      list.push({ geometry: geom, material: mat }); 
+    }
+  });
+
+  return list;
+};
+
+export const createStaticObject = (name = '', geometry, material) => {
   const geom = {};
   const mat = {};
   const mesh = {};
 
-  geom.surface = new PlaneGeometry(width, depth, widthSegments, depthSegments);
-  geom.surface.rotateX(-PI / 2);
+  geom.surface = geometry;
 
   const vertices = geom.surface.getAttribute('position').array;
   const normals = geom.surface.getAttribute('normal').array;
 
-  for (let i = 0, j = 0, l = vertices.length; i < l; i += 1, j += 3) {
-    vertices[j + 1] = data[i] * bumpHeight;
-  }
-
-  const pointsVertices = getPointsVertices(vertices, normals, World.pointSize);
-
-  //geom.bvh = geom.surface.clone();
-  geom.bvh = geom.surface.toNonIndexed();
-  geom.bvh.deleteAttribute('uv'); // mergeGeometries()でattributesの数を揃える必要があるため
-  geom.bvh.setIndex(null); // mergeGeometries()でindexの有無をどちらかに揃える必要があるため
-
-  if (name !== '') {
-    geom.bvh.name = name;
-  }
-
-  if (movable) {
-    geom.bvh.userData.movable = true;
-  }
+  const pointsNormals = getPointsNormals(vertices, normals);
+  const pointsVertices = vertices.map((value, index) => value + (pointsNormals[index] * World.pointOffset / self.devicePixelRatio));
 
   geom.wireframe = new WireframeGeometry(geom.surface);
 
@@ -239,20 +253,18 @@ export const createGround = ({
     new Float32BufferAttribute(pointsVertices, 3),
   );
 
-  mat.surface = new MeshBasicMaterial({
-    color: color.surface,
-    side: DoubleSide,
-  });
+  mat.surface = material;
   mat.wireframe = new LineBasicMaterial({
-    color: color.wireframe,
+    color: Ground.wireColor,
   });
-
   mat.points = new PointsMaterial({
-    color: color.points,
-    size: World.pointSize / devicePixelRatio,
-    map: self.texture.get('point'),
+    color: Ground.pointColor,
+    size: World.pointSize / self.devicePixelRatio,
+    transparent: true,
+    alphaMap: self.texture.get('point'),
     blending: NormalBlending,
-    alphaTest: 0.5,
+    alphaTest: Ground.alphaTest,
+    depthWrite: false,
   });
 
   mesh.surface = new Mesh(geom.surface, mat.surface);
@@ -262,26 +274,239 @@ export const createGround = ({
   mesh.points = new Points(geom.points, mat.points);
   mesh.points.name = 'points';
 
-  const group = new Group();
-  group.add(mesh.surface);
-  group.add(mesh.wireframe);
-  group.add(mesh.points);
+  const object = new Group();
+  object.name = name;
+  object.add(mesh.surface);
+  object.add(mesh.wireframe);
+  object.add(mesh.points);
 
-  // BVHジオメトリーは先に回転、次に移動の順番にする必要がある
-  group.rotation.set(rotation.x, rotation.y, rotation.z, 'YXZ');
-  geom.bvh.rotateX(rotation.x);
-  geom.bvh.rotateY(rotation.y);
-  //geom.bvh.rotateX(rotation.x);
-  geom.bvh.rotateZ(rotation.z);
+  // BVHジオメトリーは回転のみ適用し、移動はメッシュ側に適用する
+  /*object.rotation.set(rotation.x, rotation.y, rotation.z);
+  geom.collider.rotateX(rotation.x);
+  geom.collider.rotateY(rotation.y);
+  //geom.collider.rotateX(rotation.x);
+  geom.collider.rotateZ(rotation.z);
 
   const x = position.x * World.spacing;
   const y = position.y * World.spacing;
   const z = position.z * World.spacing;
 
-  group.position.set(x, y, z);
-  geom.bvh.translate(x, y, z);
+  object.position.set(x, y, z);
+  mesh.collider.position.set(x, y, z);*/
 
-  geom.bvh.userData.object = group;
+  //geom.collider.userData.object = object;
 
-  return { object: group, bvhGeom: geom.bvh };
+  return object;
+};
+
+/*export const loadTerrainData = async (
+  {
+    filename,
+    fileType,
+    position = { x: 0, y: 0, z: 0 },
+    rotation = { x: 0, y: 0, z: 0 },
+  },
+  callback,
+) => {
+  const json = await callback(filename, fileType);
+  const terrain = await new ObjectLoader().parseAsync(json);console.log(terrain.children)
+
+  const object = new Group();
+  const meshes = [];
+
+  terrain.traverse((origMesh) => {
+    if (origMesh.isMesh) {
+      const { geometry, material } = origMesh;
+      meshes.push(origMesh);
+
+      const geom = {};
+      const mat = {};
+      const mesh = {};
+
+      geom.surface = mergeVertices(geometry);
+
+      const vertices = geom.surface.getAttribute('position').array;
+      const normals = geom.surface.getAttribute('normal').array;
+
+      const pointsNormals = getPointsNormals(vertices, normals);
+      const pointsVertices = vertices.map((value, index) => value + (pointsNormals[index] * World.pointOffset / devicePixelRatio));
+
+      geom.wireframe = new WireframeGeometry(geom.surface);
+
+      geom.points = new BufferGeometry();
+      geom.points.setAttribute(
+        'position',
+        new Float32BufferAttribute(pointsVertices, 3),
+      );
+      geom.points.setAttribute(
+        'normal',
+        new Float32BufferAttribute(pointsNormals, 3),
+      );
+
+      mat.surface = material.clone();
+      mat.wireframe = new LineBasicMaterial({
+        color: Ground.wireColor,
+      });
+      mat.points = new PointsMaterial({
+        color: Ground.pointColor,
+        size: World.pointSize / devicePixelRatio,
+        transparent: true,
+        alphaMap: self.texture.get('point'),
+        blending: NormalBlending,
+        alphaTest: Ground.alphaTest,
+        depthWrite: false,
+      });
+
+      mesh.surface = new Mesh(geom.surface, mat.surface);
+      mesh.surface.name = 'surface';
+      mesh.wireframe = new LineSegments(geom.wireframe, mat.wireframe);
+      mesh.wireframe.name = 'wireframe';
+      mesh.points = new Points(geom.points, mat.points);
+      mesh.points.name = 'points';
+
+      const group = new Group();
+      group.add(mesh.surface);
+      group.add(mesh.wireframe);
+      group.add(mesh.points);
+
+      group.applyMatrix4(origMesh.matrix);
+
+      object.add(group);
+    }
+  });
+
+  const geometries = meshes.map((mesh) => {
+    const { geometry, material } = mesh;
+    const geom = geometry.toNonIndexed();
+    geom.deleteAttribute('uv');
+    geom.setIndex(null);
+
+    geom.applyMatrix4(mesh.matrix);
+
+    geometry.dispose();
+    material.dispose();
+
+    return geom;
+  });
+
+  const collider = new Mesh(mergeGeometries(geometries));
+
+  return { object, collider }*/
+
+
+  /*const geom = {};
+  const mat = {};
+  const mesh = {};
+
+  geom.surface = mergeVertices(geometry);
+  geometry.dispose();
+
+  geom.surface.scale(1, 1, 1);
+
+  const vertices = geom.surface.getAttribute('position').array;
+  const normals = geom.surface.getAttribute('normal').array;
+
+  const pointsNormals = getPointsNormals(vertices, normals);
+  const pointsVertices = vertices.map((value, index) => value + (pointsNormals[index] * World.pointOffset / devicePixelRatio));
+
+  geom.collider = geom.surface.toNonIndexed();
+  geom.collider.deleteAttribute('uv'); // mergeGeometries()でattributesの数を揃える必要があるため
+  geom.collider.setIndex(null); // mergeGeometries()でindexの有無をどちらかに揃える必要があるため
+
+  geom.wireframe = new WireframeGeometry(geom.surface);
+
+  geom.points = new BufferGeometry();
+  geom.points.setAttribute(
+    'position',
+    new Float32BufferAttribute(pointsVertices, 3),
+  );
+  geom.points.setAttribute(
+    'normal',
+    new Float32BufferAttribute(pointsNormals, 3),
+  );
+
+  geom.collider.name = filename;//////
+
+  mat.surface = material.clone();
+  material.dispose();
+  mat.wireframe = new LineBasicMaterial({
+    color: Ground.wireColor,
+  });
+
+  mat.points = new PointsMaterial({
+    color: Ground.pointColor,
+    size: World.pointSize / devicePixelRatio,
+    transparent: true,
+    alphaMap: self.texture.get('point'),
+    blending: NormalBlending,
+    alphaTest: Ground.alphaTest,
+    depthWrite: false,
+  });
+
+  mesh.surface = new Mesh(geom.surface, mat.surface);
+  mesh.surface.name = 'surface';
+  mesh.wireframe = new LineSegments(geom.wireframe, mat.wireframe);
+  mesh.wireframe.name = 'wireframe';
+  mesh.points = new Points(geom.points, mat.points);
+  mesh.points.name = 'points';
+  
+  mesh.collider = new Mesh(geom.collider);
+  mesh.collider.name = 'collider';
+
+  const object = new Group();
+  object.add(mesh.surface);
+  object.add(mesh.wireframe);
+  object.add(mesh.points);
+
+  
+
+  //const helper = new VertexNormalsHelper(mesh.points, 1, 0xff0000);
+  //object.add(helper);
+
+  // BVHジオメトリーは回転のみ適用し、移動はメッシュ側に適用する
+  object.rotation.set(rotation.x, rotation.y, rotation.z);
+  geom.collider.rotateX(rotation.x);
+  geom.collider.rotateY(rotation.y);
+  geom.collider.rotateZ(rotation.z);
+
+  const x = position.x * World.spacing;
+  const y = position.y * World.spacing;
+  const z = position.z * World.spacing;
+
+  object.position.set(x, y, z);
+  mesh.collider.position.set(x, y, z);
+  return { object, collider: mesh.collider };
+};*/
+
+export const createGround = ({
+  name = '',
+  movable = false,
+
+  widthSegments = 10,
+  depthSegments = 10,
+  bumpHeight = 1,
+  
+  position = { x: 0, y: 0, z: 0 },
+  rotation = { x: 0, y: 0, z: 0 },
+}) => {
+  const width = widthSegments * World.spacing;
+  const depth = depthSegments * World.spacing;
+
+  const heightData = generateHeight(width, depth);
+
+  const geometry = new PlaneGeometry(width, depth, widthSegments, depthSegments);
+  geometry.deleteAttribute('uv'); // mergeGeometries()でattributesの数を揃える必要があるため
+  geometry.rotateX(-PI / 2);
+
+  const vertices = geometry.getAttribute('position').array;
+
+  for (let i = 0, j = 0, l = vertices.length; i < l; i += 1, j += 3) {
+    vertices[j + 1] = heightData[i] * bumpHeight;
+  }
+
+  const material = new MeshBasicMaterial({
+    color: Ground.color,
+    side: DoubleSide,
+  });
+  return { geometry, material };
 };

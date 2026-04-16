@@ -14,7 +14,6 @@ import { Box, CssBaseline } from '@mui/material';
 
 import defaultTheme from './theme';
 import { WtContext } from './components/Context';
-import Common from '../common.json';
 import LoadingPage from './components/LoadingPage';
 import { isRootPath } from './utils';
 

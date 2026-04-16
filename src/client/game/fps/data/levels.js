@@ -80,12 +80,12 @@ const Levels = [
                   updaters: [
                     {
                       name: 'updater-1',
-                      updater: 'swing-platform-1',
+                      updater: 'move-platform',
                       params: {
                         motions: [
-                          { type: 'position', axis: 'x', moveBy: 3 },
-                          { type: 'position', axis: 'y', moveBy: 5 },
-                          { type: 'position', axis: 'z', moveBy: 3 },
+                          { axis: 'x', moveBy: 3 },
+                          { axis: 'y', moveBy: 5 },
+                          { axis: 'z', moveBy: 3 },
                         ],
                       },
                       options: {
@@ -98,12 +98,12 @@ const Levels = [
                     },
                     {
                       name: 'updater-2',
-                      updater: 'swing-platform-1',
+                      updater: 'move-platform',
                       params: {
                         motions: [
-                          { type: 'position', axis: 'x', moveBy: 30 },
-                          { type: 'position', axis: 'y', moveBy: 2 },
-                          { type: 'position', axis: 'z', moveBy: 10 },
+                          { axis: 'x', moveBy: 30 },
+                          { axis: 'y', moveBy: 0 },
+                          { axis: 'z', moveBy: 10 },
                         ],
                       },
                       options: {
@@ -128,6 +128,13 @@ const Levels = [
                 ],
                 ground: [
                   {
+                    useLoader: true,
+                    fileType: 'gltf',
+                    filename: 'terrain-01.glb',
+                    position: { x: 0, y: -5, z: 0 },
+                    rotation: { x: 0, y: 0, z: 0 },
+                  },
+                  {
                     name: 'moving-platform-1',
                     movable: true,
 
@@ -137,10 +144,10 @@ const Levels = [
                     position: { x: 5, y: -4, z: 7 },
                     rotation: { x: 0, y: 0, z: 0 },
                   },
-                  {
+                  /*{
                     widthSegments: 40,
                     depthSegments: 40,
-                    bumpHeight: 0.15,//0.3,
+                    bumpHeight: 0.3,
                     position: { x: 0, y: -5, z: 0 },
                     rotation: { x: 0, y: 0, z: 0 },
                   },
@@ -157,7 +164,7 @@ const Levels = [
                     bumpHeight: 0.3,
                     position: { x: 2.4, y: -2, z: 0 },
                     rotation: { x: 0, y: 0, z: 1.5 },
-                  },
+                  },*/
                 ],
               },
             },

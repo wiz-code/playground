@@ -101,7 +101,8 @@ const sprites = {
     canvas.width = 128;
     canvas.height = 128;
 
-    context.fillStyle = 'rgba(0,0,0,0)';
+    //context.fillStyle = 'rgba(0,0,0,0)';
+    context.fillStyle = 'rgb(0,0,0)';
     context.fillRect(0, 0, 128, 128);
     context.fillStyle = '#FFF';
     context.beginPath();
@@ -155,7 +156,8 @@ const sprites = {
     canvas.width = 128;
     canvas.height = 128;
 
-    context.fillStyle = 'rgba(0,0,0,0)';
+    //context.fillStyle = 'rgba(0,0,0,0)';
+    context.fillStyle = 'rgb(0,0,0)';
     context.fillRect(0, 0, 128, 128);
     context.fillStyle = '#FFF';
     context.beginPath();

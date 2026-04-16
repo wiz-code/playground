@@ -11,24 +11,28 @@ class MovableManager extends Publisher {
   constructor(game) {
     super();
 
-    this.bvh = null;
     this.geometry = null;
-    this.data = null;
+    this.dataMap = null;
     this.refitSet = new Set();
     this.list = new Map();
   }
 
-  setBVH(bvh) {
-    this.bvh = bvh;
-    this.geometry = bvh.geometry;
-    this.data = this.geometry.userData;
+  setColliderGeometry(geometry) {
+    this.geometry = geometry;
+    this.dataMap = this.geometry.userData.movableMap;
   }
 
   addObject(movable) {
-    if (this.bvh != null) {
-      const map = this.data.movableBVH;
-      const data = map.get(movable.name);
-      movable.setGeometry(this.geometry, data.offset, data.count, data.object);
+    if (this.geometry != null) {
+      const data = this.dataMap.get(movable.name);
+      movable.setGeometry(this.geometry, data);
+      const nodeIndices = movable.getNodeIndices();
+
+      for (let i = 0, l = nodeIndices.length; i < l; i += 1) {
+        const nodeIndex = nodeIndices[i];
+        this.refitSet.add(nodeIndex);
+      }
+
       this.list.set(movable.name, movable);
     }
   }
@@ -40,24 +44,23 @@ class MovableManager extends Publisher {
     }
   }
 
-  clearBVH() {
-    this.bvh = null;
+  clearColliderGeometry() {
     this.refitSet.clear();
     this.list.forEach((object) => {
       this.removeObject(object);
     });
 
     this.geometry = null;
-    this.data = null;
+    this.dataMap = null;
   }
 
   dispose() {
-    this.clearBVH();
+    this.clearColliderGeometry();
     this.clear();
   }
 
   update(deltaTime) {
-    if (this.bvh == null) {
+    if (this.geometry == null) {
       return;
     }
 

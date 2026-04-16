@@ -1,9 +1,8 @@
-import Common from '../../common.json';
+import { Paths } from '../../common/constants';
 import { Sound } from './settings';
 import Publisher from './publisher';
 
 const { min, max, floor } = Math;
-const { Paths } = Common;
 
 const MaxSourceSize = 100;
 

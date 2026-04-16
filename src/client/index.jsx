@@ -5,10 +5,9 @@ import { HelmetProvider } from 'react-helmet-async';
 
 import store from './redux/store';
 import App from './App';
-import Common from '../common.json';
+import { Meta, LastPathSegments } from '../common/constants';
 import { MetaContext } from './components/Context';
 
-const { Meta, LastPathSegments } = Common;
 const meta = new Map(Meta);
 
 const container = document.getElementById('app');

@@ -17,7 +17,7 @@ import SettingsIcon from '@mui/icons-material/Settings';
 
 import Setting from './Setting';
 import { GameContext } from './Context';
-import Common from '../../common.json';
+import { Games } from '../../common/constants';
 import settingSlice from '../redux/settingSlice';
 import gameSlice from '../redux/gameSlice';
 import Loading from './Loading.jsx';
@@ -27,7 +27,6 @@ import { getNextScene } from '../utils';
 
 const { actions: settingActions } = settingSlice;
 const { actions: gameActions } = gameSlice;
-const { Games } = Common;
 
 const gameMap = new Map(Games);
 const monospaced = '"MS Gothic", "TakaoGothic", "Noto Sans CJK JP", Monospace';

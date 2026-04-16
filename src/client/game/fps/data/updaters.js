@@ -4,45 +4,70 @@ import { World } from '../settings';
 
 const Updaters = [
   [
-    'swing-platform-1',
+    'move-platform',
     function update(movable, params, direction, progress, deltaProgress) {
+      const { motions } = params;
+      const { object, geometry, offset, count } = movable;
+      const position = geometry.getAttribute('position');
+      const delta = {};
+
+      for (let i = 0, l = motions.length; i < l; i += 1) {
+        const motion = motions[i];
+        const { axis, moveBy } = motion;
+        const value = moveBy * World.spacing * direction * deltaProgress;
+        delta[axis] = value;
+      }
+
+      for (let j = 0; j < count; j += 1) {
+        const index = offset + j;
+
+        if (delta.x != null) {
+          const value = position.getX(index) + delta.x;
+          position.setX(index, value);
+        }
+
+        if (delta.y != null) {
+          const value = position.getY(index) + delta.y;
+          position.setY(index, value);
+        }
+
+        if (delta.z != null) {
+          const value = position.getZ(index) + delta.z;
+          position.setZ(index, value);
+        }
+      }
+
+      position.needsUpdate = true;
+
+      const { x, y, z } = object.position;
+
+      if (delta.x != null) {
+        object.position.x += delta.x;
+      }
+
+      if (delta.y != null) {
+        object.position.y += delta.y;
+      }
+
+      if (delta.z != null) {
+        object.position.z += delta.z;
+      }
+    },
+  ],
+  [
+    'rotate-platform',
+    function update(movable, params, direction, progress, deltaProgress) {///////////////////////////
       const { motions } = params;
       const { object, offset, count } = movable;
       const position = movable.geometry.getAttribute('position');
 
       for (let i = 0, l = motions.length; i < l; i += 1) {
         const motion = motions[i];
-        const { type, axis, moveBy } = motion;
-        const delta =
-          type === 'position'
-            ? moveBy * World.spacing * direction * deltaProgress
-            : 0;
+        const { type, axis, rotateBy } = motion;
+        const delta = rotateBy * direction * deltaProgress;
 
         for (let j = 0; j < count; j += 1) {
           const index = offset + j;
-
-          if (type === 'position') {
-            if (axis === 'x') {
-              const x = position.getX(index);
-              position.setX(index, x + delta);
-            } else if (axis === 'y') {
-              const y = position.getY(index);
-              position.setY(index, y + delta);
-            } else {
-              const z = position.getZ(index);
-              position.setZ(index, z + delta);
-            }
-          }
-        }
-
-        if (type === 'position') {
-          if (axis === 'x') {
-            object.translateX(delta);
-          } else if (axis === 'y') {
-            object.translateY(delta);
-          } else {
-            object.translateZ(delta);
-          }
         }
       }
 

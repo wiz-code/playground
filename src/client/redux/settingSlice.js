@@ -1,10 +1,9 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-import Common from '../../common.json';
+import { Games } from '../../common/constants';
 import { HighFramerateCoef } from '../../common/constants';
 import { Sound } from '../game/settings';
 
-const { Games } = Common;
 const games = new Map(Games);
 const [gameName] = Array.from(games.keys());
 

@@ -16,17 +16,11 @@ import { useTheme } from '@mui/material/styles';
 import Layout from './Layout';
 import Head from './Head';
 
-import Common from '../../common.json';
+import { Games } from '../../common/constants';
 import gameSlice from '../redux/gameSlice';
 
 const { actions: gameActions } = gameSlice;
-const { Games, Paths } = Common;
 const gameMap = new Map(Games);
-const pathMap = new Map(Paths);
-
-const AssetPaths = pathMap.get('Assets');
-const assetPaths = new Map(AssetPaths);
-const prefixPath = assetPaths.get('images');
 
 function SelectStage() {
   const { gameId, scene } = useSelector((state) => state.game);

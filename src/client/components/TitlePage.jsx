@@ -19,12 +19,11 @@ import Head from './Head';
 import { ColumnGrid, Row } from './Common';
 import MobilePlayDialog from './MobilePlayDialog';
 
-import Common from '../../common.json';
+import { Games } from '../../common/constants';
 import { getNextScene } from '../utils';
 import gameSlice from '../redux/gameSlice';
 
 const { actions: gameActions } = gameSlice;
-const { Games } = Common;
 const gameMap = new Map(Games);
 
 function TitlePage() {

@@ -29,12 +29,11 @@ import Layout from './Layout';
 import Head from './Head';
 import { ColumnGrid, Row } from './Common';
 
-import Common from '../../common.json';
+import { Games } from '../../common/constants';
 import gameSlice from '../redux/gameSlice';
 import { MetaContext, GameContext } from './Context';
 
 const { actions: gameActions } = gameSlice;
-const { Games } = Common;
 const gameMap = new Map(Games);
 
 function SelectPage({ pathname, lastSegment }) {
